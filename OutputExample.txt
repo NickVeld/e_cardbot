@@ -1,0 +1,24 @@
+{
+    "ok": true,
+    "result": [
+        {
+            "message": {
+                "chat": {
+                    "first_name": "Nick",
+                    "id": 61407283,
+                    "last_name": "Veld",
+                    "type": "private"
+                },
+                "date": 1454440602,
+                "from": {
+                    "first_name": "Nick",
+                    "id": 61407283,
+                    "last_name": "Veld"
+                },
+                "message_id": 1,
+                "text": "/start"
+            },
+            "update_id": 163111339
+        }
+    ]
+}
