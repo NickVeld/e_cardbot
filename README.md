@@ -1,10 +1,12 @@
 # E_CardBot
 This bots helps with picking up the English vocabulary using studying strategies and technologies, elements of play. Also it can be used as a translator.
 
-0.  Настройка инструментов
-1.	API словарей 
-2.	Переводчик
-3.	Накапливание данных
+<!-- language: lang-none -->
+<pre>
+0.  Настройка инструментов #1 #2 #3 #4 
+1.	API словарей #5 #6 #7
+2.	Переводчик #8
+3.	Накапливание данных #9 #10
 4.	Карточки (помню/не помню)
 ---------------------------------------------- 4
 5.	Разные типы карточек:
@@ -20,3 +22,4 @@ This bots helps with picking up the English vocabulary using studying strategies
 10.	Презентация
 11. Архитектура
 12. Релиз
+</pre>
