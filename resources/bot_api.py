@@ -2,11 +2,13 @@
 
 import requests
 import json
+from pymongo import MongoClient
 
 __author__ = 'NickVeld'
 
 
 class api:
+    db = MongoClient('mongo', 27017).e_card
     admin_ids = set()
     api_key = ""
     dict_key = ""

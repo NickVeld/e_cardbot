@@ -3,17 +3,17 @@ import time
 from resources import bot_api
 from resources.workers import *
 
-offset = 163113241
+offset = 0
 
 cfg = open("config.cfg", 'r')
 data = dict()
 data["api_key"] = cfg.readline().strip()
 data["dict_key"] = cfg.readline().strip()
 data["tr_key"] = cfg.readline().strip()
-data["admin_ids"] = {}
+data["admin_ids"] = cfg.readline().split(',')
 cfg.close()
 tapi = bot_api.api(data)
-workers = (blacklist(data), stop(data), tr(data), ph(data), help(data))
+workers = (blacklist(data), stop(data), tr(data), ph(data), help_txt(data))
 
 isRunning = True
 print("Guess who's back!")
@@ -33,7 +33,7 @@ try:
 
         if newMsgs['ok'] and (len(newMsgs['result']) != 0):
             for msg in newMsgs['result']:
-                if(not isRunning):
+                if not isRunning:
                     break
                 offset = msgc.upd_id(newMsgs['result'][len(newMsgs['result']) - 1])
                 print(offset)
@@ -44,9 +44,9 @@ try:
                     print(msgc.text(msg))
                     try:
                         for worker in workers:
-                            if(worker.is_it_for_me(msg)):
+                            if worker.is_it_for_me(msg):
                                 cmd = worker.run(msg)
-                                if(cmd == 2):
+                                if cmd == 2:
                                     isRunning = False
                                 break
 

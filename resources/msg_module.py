@@ -39,5 +39,5 @@ class msgc:
     text = staticmethod(text)
 
     def textmod(tmsg):
-        tmsg['message']['text'] = tmsg['message']['text'].strip().replace("@E_CardBot", "")
+        tmsg['message']['text'] = tmsg['message']['text'].strip().replace("@E_CardBot", "").lower()
     textmod = staticmethod(textmod)
