@@ -1,4 +1,4 @@
-class MSG:
+class msgc:
     def id(tmsg):
         return tmsg['message']['message_id']
     id = staticmethod(id)
@@ -37,3 +37,7 @@ class MSG:
         else:
             return ""
     text = staticmethod(text)
+
+    def textmod(tmsg):
+        tmsg['message']['text'] = tmsg['message']['text'].strip().replace("@E_CardBot", "")
+    textmod = staticmethod(textmod)

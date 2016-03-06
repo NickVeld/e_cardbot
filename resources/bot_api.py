@@ -6,7 +6,7 @@ import json
 __author__ = 'NickVeld'
 
 
-class Api:
+class api:
     admin_id = 61407283
     api_key = '195086242:AAEvbzKAHV69PS3X4vptJNNij_OT3bT8BeY'
     dict_key = "dict.1.1.20160213T102818Z.7142bb91598d6fff.b1c74ef028f0e5db99da1f0d3e1db9561ea61c95"
@@ -107,3 +107,9 @@ class Api:
                 return ""
         else:
             return "Ошибочка вышла.\nСоветы:\n1) Проверьте ввод.\n2) Прочтите /help\n3) Надейтесь, что это не проблема с сервисом перевода."
+
+    # def is_it_for_me(self, msg):
+    #     raise NotImplementedError("It's necessary to redefine the abstract method \"is_it_for_me\"!")
+    #
+    # def run(self, msg):
+    #     raise NotImplementedError("It's necessary to redefine the abstract method \"run\"!")
