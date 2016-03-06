@@ -7,10 +7,16 @@ __author__ = 'NickVeld'
 
 
 class api:
-    admin_id = 61407283
-    api_key = '195086242:AAEvbzKAHV69PS3X4vptJNNij_OT3bT8BeY'
-    dict_key = "dict.1.1.20160213T102818Z.7142bb91598d6fff.b1c74ef028f0e5db99da1f0d3e1db9561ea61c95"
-    tr_key = "trnsl.1.1.20160215T190325Z.369ef43e4e71a747.935abff36df1f9617df0995d9267a7d42b06a1f4"
+    admin_ids = set()
+    api_key = ""
+    dict_key = ""
+    tr_key = ""
+
+    def __init__(self, data):
+        self.api_key = data["api_key"]
+        self.dict_key = data["dict_key"]
+        self.tr_key = data["tr_key"]
+        self.admin_ids = data["admin_ids"]
 
     def get(self, toffset=0):
         method = 'getUpdates'

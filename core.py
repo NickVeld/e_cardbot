@@ -5,8 +5,15 @@ from resources.workers import *
 
 offset = 163113241
 
-tapi = bot_api.api()
-workers = (blacklist(), stop(), tr(), ph(), help())
+cfg = open("config.cfg", 'r')
+data = dict()
+data["api_key"] = cfg.readline().strip()
+data["dict_key"] = cfg.readline().strip()
+data["tr_key"] = cfg.readline().strip()
+data["admin_ids"] = {}
+cfg.close()
+tapi = bot_api.api(data)
+workers = (blacklist(data), stop(data), tr(data), ph(data), help(data))
 
 isRunning = True
 print("Guess who's back!")
