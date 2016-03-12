@@ -7,43 +7,49 @@ from pymongo import MongoClient
 __author__ = 'NickVeld'
 
 
-class api:
+class API:
     db = MongoClient('mongo', 27017).e_card
     admin_ids = set()
-    api_key = ""
-    dict_key = ""
-    tr_key = ""
+    API_KEY = ""
+    DICT_KEY = ""
+    TR_KEY = ""
+    DB_IS_ENABLED = False
 
-    def __init__(self, data):
-        self.api_key = data["api_key"]
-        self.dict_key = data["dict_key"]
-        self.tr_key = data["tr_key"]
+    def __init__(self, data, db_is_enabled=False):
+        self.API_KEY = data["api_key"]
+        self.DICT_KEY = data["dict_key"]
+        self.TR_KEY = data["tr_key"]
         self.admin_ids = data["admin_ids"]
+        self.DB_IS_ENABLED = db_is_enabled
 
     def get(self, toffset=0):
         method = 'getUpdates'
         params = {
-            'offset': toffset + 1
+            'offset': toffset + 1,
+            'timeout': 28
         }
         try:
             req = requests.request(
                 'POST',
                 'https://api.telegram.org/bot{api_key}/{method}'.format(
-                    api_key=self.api_key,
+                    api_key=self.API_KEY,
                     method=method
                 ),
                 params=params,
                 timeout=30
             )
+            if req.text is "":
+                return None
 
-            return json.loads(req.text)
+            new_msgs = json.loads(req.text)
+            if new_msgs['ok'] and (len(new_msgs['result']) != 0):
+                return json.loads(req.text)
         except requests.exceptions.Timeout:
             print("Timeout in get()!")
         except Exception as ex:
             print("Error in get()!")
             print(type(ex), ex.__str__())
-
-        return ""
+        return None
 
     def send(self, message, chat_id, reply_to_message_id=0):
         method = 'sendMessage'
@@ -58,7 +64,7 @@ class api:
             req = requests.request(
                 'POST',
                 'https://api.telegram.org/bot{api_key}/{method}'.format(
-                    api_key=self.api_key,
+                    api_key=self.API_KEY,
                     method=method
                 ),
                 params=params,
@@ -74,17 +80,17 @@ class api:
     def translate(self, request, lang, userl="en"):
         req = requests.get(
             "https://dictionary.yandex.net/api/v1/dicservice.json/lookup?key={dict_key}&lang={lang}&text={request})".format(
-                dict_key = self.dict_key,
-                lang = lang,
-                request = request
-                # userl = userl, &ui={userl}
-                # flag = 12 &flags={flag}
+                dict_key=self.DICT_KEY,
+                lang=lang,
+                request=request
+                # userl=userl, &ui={userl}
+                # flag=12 &flags={flag}
             )
         ).json()
 
         res = ""
         if len(req['def']) > 0:
-            nstr = 1 #number of string
+            nstr = 1  # number of string
             for wdef in req['def']:
                 if 'tr' in wdef:
                     if len(wdef['tr']) > 0:
@@ -100,11 +106,11 @@ class api:
     def translateph(self, request, lang, userl="en"):
         req = requests.get(
             "https://translate.yandex.net/api/v1.5/tr.json/translate?key={tr_key}&text={request}&lang={lang}".format(
-                tr_key = self.tr_key,
-                lang = lang,
-                request = request
-                # userl = userl, &ui={userl}
-                # flag = 12 &flags={flag}
+                tr_key=self.TR_KEY,
+                lang=lang,
+                request=request
+                # userl=userl, &ui={userl}
+                # flag=12 &flags={flag}
             )
         ).json()
 
@@ -114,10 +120,11 @@ class api:
             else:
                 return ""
         else:
-            return "Ошибочка вышла.\nСоветы:\n1) Проверьте ввод.\n2) Прочтите /help\n3) Надейтесь, что это не проблема с сервисом перевода."
+            return "Ошибочка вышла.\nСоветы:\n1) Проверьте ввод.\n2) Прочтите /help\n" \
+                   "3) Надейтесь, что это не проблема с сервисом перевода."
 
-    # def is_it_for_me(self, msg):
-    #     raise NotImplementedError("It's necessary to redefine the abstract method \"is_it_for_me\"!")
-    #
-    # def run(self, msg):
-    #     raise NotImplementedError("It's necessary to redefine the abstract method \"run\"!")
+    def is_it_for_me(self, tmsg):
+        raise NotImplementedError("It's necessary to redefine the abstract method \"is_it_for_me\"!")
+
+    def run(self, tmsg):
+        raise NotImplementedError("It's necessary to redefine the abstract method \"run\"!")
