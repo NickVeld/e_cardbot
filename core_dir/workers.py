@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import datetime
 from core_dir.bot_api import API
 
@@ -6,9 +8,9 @@ class WorkersList(type):
     workers = []
 
     def __new__(mcs, name, bases, attrs, **kwargs):
-        res = super(WorkersList, mcs).__new__(mcs, name, bases, attrs)
+        worker_class = super(WorkersList, mcs).__new__(mcs, name, bases, attrs)
         if '__not_bot__' not in attrs:
-            WorkersList.workers.append(res)
+            WorkersList.workers.append((name, worker_class))
         return res
 
     @staticmethod
@@ -22,7 +24,17 @@ class WorkersList(type):
         return True
 
 
+class BaseWorker(object):
+    __metaclass__ = WorkersList
+    
+    def __init__(self, teleapi):
+        self.teleapi = teleapi
+        
+        # self.teleapi.send_message(...)
+
+#class Blacklist(BaseWorker):
 class Blacklist(API):
+    #__not_bot__ = True
     # __metaclass__ = WorkersList
 
     def is_it_for_me(self, tmsg):
