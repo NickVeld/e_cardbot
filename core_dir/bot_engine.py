@@ -1,4 +1,4 @@
-from scripts.msg_module import Msg
+from core_dir.msg_module import Msg
 
 
 class BotCycle:

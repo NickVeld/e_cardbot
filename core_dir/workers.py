@@ -1,4 +1,5 @@
-from scripts.bot_api import API
+import datetime
+from core_dir.bot_api import API
 
 
 class WorkersList(type):
@@ -80,6 +81,7 @@ class Translator(API):
                 print(self.send(res, tmsg.chat_id, tmsg.id))
                 if (self.DB_IS_ENABLED):
                     collection.insert_one({"word": txt, "trl": res})
+                    self.db[str(tmsg.pers_id)].insert_one({"word": txt})
         else:
             print(self.send("l " + post["trl"], tmsg.chat_id, tmsg.id))
 
@@ -136,4 +138,49 @@ class PhraseTranslator(API):
             print(self.send(res, tmsg.chat_id, tmsg.id))
         if is_chain:
             self.waitlist.pop((tmsg.pers_id, tmsg.chat_id))
+        return 0
+
+
+class SimpleCard(API):
+    waitlist = dict()
+
+    def is_it_for_me(self, tmsg):
+        if (tmsg.pers_id, tmsg.chat_id) in self.waitlist:
+            return True
+        if tmsg.text.startswith("/simple_cards"):
+            if not self.DB_IS_ENABLED:
+                print(self.send("I can't start card mode!", tmsg.chat_id, tmsg.id))
+            elif self.db[str(tmsg.pers_id)]['known_words'].count() == 0:
+                print(self.send("You didn't translate any words!", tmsg.chat_id, tmsg.id))
+            else:
+                print("True")
+                return True
+        return False
+
+    def run(self, tmsg):
+        collection = self.db[str(tmsg.pers_id)]['known_words']
+        if (tmsg.pers_id, tmsg.chat_id) in self.waitlist:
+            if tmsg.text == "No":
+                post = collection.find_one({"_id": self.waitlist[(tmsg.pers_id, tmsg.chat_id)]})
+                post = self.db.tr.find_one({"word": post.word})
+                print(self.send(post["trl"], tmsg.chat_id, tmsg.id))
+                tmsg.text = "Yes"
+            if tmsg.text == "Yes":
+                collection.update_one(
+                    {"_id": self.waitlist[(tmsg.pers_id, tmsg.chat_id)]},
+                    {
+                        "date": datetime.datetime.utcnow()
+                    }
+                )
+        post = None
+        if tmsg.text != "Stop":
+            post = collection.find_one(
+            {"lastRevised" :
+                 {"$lt": datetime.datetime.utcnow() - datetime.datetime(0, 0, 0, 0, 5, 0, 0)}
+            })
+        if post == None:
+            self.waitlist.pop((tmsg.pers_id, tmsg.chat_id))
+        else:
+            print(self.send("Do you remember the word " + post.word + " ?", tmsg.chat_id, tmsg.id))
+            self.waitlist[(tmsg.pers_id, tmsg.chat_id)] = post._id
         return 0
