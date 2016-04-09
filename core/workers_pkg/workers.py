@@ -80,7 +80,7 @@ class Translator(BaseWorker):
             txt = tmsg.text.lstrip()
         # res = ""
         post = None
-        if (self.tAPI.DB_IS_ENABLED):
+        if self.tAPI.DB_IS_ENABLED:
             collection = self.tAPI.db.tr
             post = collection.find_one({"word": txt})
         if post is None:
@@ -91,7 +91,7 @@ class Translator(BaseWorker):
                 print(self.tAPI.send("Нет перевода!", tmsg.chat_id, tmsg.id))
             else:
                 print(self.tAPI.send(res, tmsg.chat_id, tmsg.id))
-                if (self.tAPI.DB_IS_ENABLED):
+                if self.tAPI.DB_IS_ENABLED:
                     collection.insert_one({"word": txt, "trl": res})
                     self.tAPI.db[str(tmsg.pers_id)].insert_one({"word": txt})
         else:

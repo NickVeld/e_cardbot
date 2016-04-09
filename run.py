@@ -1,9 +1,10 @@
 import sys
-from core import bot_api
-import core.workers as lworkers
-from core import bot_engine
+
 from configobj import ConfigObj
 
+import core.workers_pkg.workers as lworkers
+from core.apis_pkg import bot_api
+from core.engine_pkg import bot_engine
 
 data = dict()
 # cfg = open("config.cfg", 'r')
