@@ -1,6 +1,7 @@
-from core_dir import bot_api
-import core_dir.workers as lworkers
-from core_dir import bot_engine
+import sys
+from core import bot_api
+import core.workers as lworkers
+from core import bot_engine
 from configobj import ConfigObj
 
 
@@ -27,7 +28,20 @@ data["db_name"] = cfg['mongo_settings']['db_name']
 data["admin_ids"] = cfg['admins_ids']
 
 tapi = bot_api.API(data)
-workers = (lworkers.Blacklist(data), lworkers.Stop(data), lworkers.Translator(data),
-           lworkers.PhraseTranslator(data), lworkers.Info(data), lworkers.SimpleCard(data))
+# workers = (lworkers.Blacklist(data), lworkers.Stop(data), lworkers.Translator(data),
+#            lworkers.PhraseTranslator(data), lworkers.Info(data), lworkers.SimpleCard(data))
+
+workers = []
+for worker in lworkers.WorkersList.workers:
+    exist = False
+    for str in cfg['included_workers']:
+        if str == worker[0]:
+            exist = True
+            break
+    if not exist:
+        lworkers.WorkersList.workers.remove(worker)
+
+for str in cfg['included_workers']:
+    workers.append(getattr(sys.modules[lworkers.__name__], str)(tapi))
 bs = bot_engine.BotCycle(tapi, workers)
 bs.run()
