@@ -43,6 +43,10 @@ for worker in lworkers.WorkersList.workers:
         lworkers.WorkersList.workers.remove(worker)
 
 for str in cfg['included_workers']:
-    workers.append(getattr(sys.modules[lworkers.__name__], str)(tapi))
+    try:
+        workers.append(getattr(sys.modules[lworkers.__name__], str)(tapi))
+        print(str)
+    except:
+        print("There isn't " + str)
 bs = bot_engine.BotCycle(tapi, workers)
 bs.run()

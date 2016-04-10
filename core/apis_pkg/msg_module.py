@@ -43,5 +43,8 @@ class Msg():
         else:
             return ""
 
+    def text_change_to(self, new_v):
+        self.msg['message']['text'] = new_v
+
     def textmod(self):
         self.msg['message']['text'] = self.msg['message']['text'].strip().replace("@E_CardBot", "").lower()

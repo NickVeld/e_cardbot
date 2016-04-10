@@ -93,7 +93,12 @@ class Translator(BaseWorker):
                 print(self.tAPI.send(res, tmsg.chat_id, tmsg.id))
                 if self.tAPI.DB_IS_ENABLED:
                     collection.insert_one({"word": txt, "trl": res})
-                    self.tAPI.db[str(tmsg.pers_id)].insert_one({"word": txt})
+                    self.tAPI.db[str(tmsg.pers_id)]['known_words'].insert_one(
+                        {
+                            "word": txt,
+                            "lastRevised": datetime.datetime.utcnow()
+                        }
+                    )
         else:
             print(self.tAPI.send("l " + post["trl"], tmsg.chat_id, tmsg.id))
 
@@ -108,7 +113,7 @@ class Info(BaseWorker):
         return tmsg.text.startswith("/help")
 
     def run(self, tmsg):
-        HELP = ""
+        HELP = "Storage is " + ("on" if self.tAPI.DB_IS_ENABLED else "off") + "!\n\n"
         for worker in WorkersList.workers:
             HELP += worker[1].HELP
         HELP = HELP[:-2]
@@ -159,7 +164,7 @@ class PhraseTranslator(BaseWorker):
 
 class SimpleCard(BaseWorker):
 
-    HELP = "\"/simplecards\" turn on mode of revising known words.\n\n"
+    HELP = "\"/simple_cards\" turn on mode of revising known words.\n\n"
 
     waitlist = dict()
 
@@ -172,7 +177,6 @@ class SimpleCard(BaseWorker):
             elif self.tAPI.db[str(tmsg.pers_id)]['known_words'].count() == 0:
                 print(self.tAPI.send("You didn't translate any words!", tmsg.chat_id, tmsg.id))
             else:
-                print("True")
                 return True
         return False
 
@@ -181,25 +185,29 @@ class SimpleCard(BaseWorker):
         if (tmsg.pers_id, tmsg.chat_id) in self.waitlist:
             if tmsg.text == "No":
                 post = collection.find_one({"_id": self.waitlist[(tmsg.pers_id, tmsg.chat_id)]})
-                post = self.tAPI.db.tr.find_one({"word": post.word})
+                post = self.tAPI.db.tr.find_one({"word": post['word']})
                 print(self.tAPI.send(post["trl"], tmsg.chat_id, tmsg.id))
-                tmsg.text = "Yes"
+                tmsg.text_change_to("Yes")
             if tmsg.text == "Yes":
                 collection.update_one(
                     {"_id": self.waitlist[(tmsg.pers_id, tmsg.chat_id)]},
                     {
-                        "date": datetime.datetime.utcnow()
+                        "$set": {
+                            "lastRevised": datetime.datetime.utcnow()
+                        }
                     }
                 )
         post = None
         if tmsg.text != "Stop":
             post = collection.find_one(
             {"lastRevised" :
-                 {"$lt": datetime.datetime.utcnow() - datetime.datetime(0, 0, 0, 0, 5, 0, 0)}
+                 {"$lt": datetime.datetime.utcnow() - datetime.timedelta(minutes=1)}
             })
         if post == None:
-            self.waitlist.pop((tmsg.pers_id, tmsg.chat_id))
+            if (tmsg.pers_id, tmsg.chat_id) in self.waitlist:
+                self.waitlist.pop((tmsg.pers_id, tmsg.chat_id))
+            print(self.tAPI.send("There is a nothing to show. I exit from mode \"simple cards\".", tmsg.chat_id, tmsg.id))
         else:
-            print(self.tAPI.send("Do you remember the word " + post.word + " ?", tmsg.chat_id, tmsg.id))
-            self.waitlist[(tmsg.pers_id, tmsg.chat_id)] = post._id
+            print(self.tAPI.send("Do you remember the word \"" + post['word'] + "\"?", tmsg.chat_id, tmsg.id))
+            self.waitlist[(tmsg.pers_id, tmsg.chat_id)] = post["_id"]
         return 0

@@ -21,7 +21,7 @@ class API:
         self.TR_KEY = data["tr_key"]
         self.admin_ids = data["admin_ids"]
         self.DB_IS_ENABLED = data["db_is_enabled"]
-        self.db = MongoClient(data["mongo_name"], data["mongo_port"])["db_name"]
+        self.db = MongoClient(data["mongo_name"], data["mongo_port"])["e_card"]
 
     def get(self, toffset=0):
         method = 'getUpdates'
