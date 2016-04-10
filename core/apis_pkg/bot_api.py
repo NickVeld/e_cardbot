@@ -52,7 +52,7 @@ class API:
             print(type(ex), ex.__str__())
         return None
 
-    def send(self, message, chat_id, reply_to_message_id=0):
+    def send(self, message, chat_id, reply_to_message_id=0, keyboard=None):
         method = 'sendMessage'
         params = {
             'chat_id': chat_id,
@@ -61,6 +61,12 @@ class API:
         }
         if reply_to_message_id:
             params['reply_to_message_id'] = reply_to_message_id
+        if keyboard != None:
+            params["reply_markup"] = json.dumps({
+                "keyboard": keyboard,
+                "resize_keyboard": True,
+                "one_time_keyboard": True
+            })
         try:
             req = requests.request(
                 'POST',
