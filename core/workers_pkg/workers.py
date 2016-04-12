@@ -118,7 +118,7 @@ class Info(BaseWorker):
         return tmsg.text.startswith("/help")
 
     def run(self, tmsg):
-        HELP = "Storage is " + ("on" if self.tAPI.DB_IS_ENABLED else "off") + "!\n\n"
+        HELP = "" # "Storage is " + ("on" if self.tAPI.DB_IS_ENABLED else "off") + "!\n\n"
         for worker in WorkersList.workers:
             HELP += worker[1].HELP
         HELP = HELP[:-2]
@@ -169,9 +169,11 @@ class PhraseTranslator(BaseWorker):
 
 class SimpleCard(BaseWorker):
 
-    HELP = "Команда \"/simple_cards\" включает режим карточек, которые проверяет помните ли вы некогда переведенные слова.\n\n"
+    HELP = "Команда \"/simple_cards\" включает режим карточек, которые проверяет, помните ли вы некогда переведенные слова.\n\n"
 
     waitlist = dict()
+
+    cooldown_m = 1
 
     def is_it_for_me(self, tmsg):
         if (tmsg.pers_id, tmsg.chat_id) in self.waitlist:
@@ -221,12 +223,13 @@ class SimpleCard(BaseWorker):
                 return 0
         post = collection.find_one(
         {"lastRevised" :
-             {"$lt": datetime.datetime.utcnow() - datetime.timedelta(minutes=1)}
+             {"$lt": datetime.datetime.utcnow() - datetime.timedelta(minutes=self.cooldown_m)}
         })
         if post == None:
             if (tmsg.pers_id, tmsg.chat_id) in self.waitlist:
                 self.waitlist.pop((tmsg.pers_id, tmsg.chat_id))
-            self.tAPI.send("Мне не о чем вас спросить сейчас, попробуйте включить этот режим позже.\n"
+            self.tAPI.send("Мне не о чем вас спросить сейчас, попробуйте включить этот режим через несколько("
+                           + str(self.cooldown_m) +") минут.\n"
                            "Я вышел из режима \"simple cards\".",
                             tmsg.chat_id, tmsg.id)
         else:

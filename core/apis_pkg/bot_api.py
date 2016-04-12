@@ -65,7 +65,8 @@ class API:
             params["reply_markup"] = json.dumps({
                 "keyboard": keyboard,
                 "resize_keyboard": True,
-                "one_time_keyboard": True
+                "one_time_keyboard": True,
+                "selective": True
             })
         try:
             req = requests.request(
