@@ -66,7 +66,7 @@ class API:
                 "keyboard": keyboard,
                 "resize_keyboard": True,
                 "one_time_keyboard": True,
-                "selective": True #
+                "selective": True
             })
         try:
             req = requests.request(
