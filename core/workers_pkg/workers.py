@@ -237,3 +237,75 @@ class SimpleCard(BaseWorker):
                                  tmsg.chat_id, tmsg.id, keyboard=[["/Yes"], ["/No"], ["/Stop"]]))
             self.waitlist[(tmsg.pers_id, tmsg.chat_id)] = post["_id"]
         return 0
+
+class TranslationCard(BaseWorker):
+
+    HELP = "Команда \"/tr_cards\" включает режим карточек, которые проверяет, помните ли вы написание некогда переведенных слов по их переводу.\n\n"
+
+    waitlist = dict()
+
+    cooldown_m = 1
+
+    def is_it_for_me(self, tmsg):
+        if (tmsg.pers_id, tmsg.chat_id) in self.waitlist:
+            return True
+        if tmsg.text.startswith("/tr_cards"):
+            if not self.tAPI.DB_IS_ENABLED:
+                print(self.tAPI.send("Этот режим сейчас недоступен!", tmsg.chat_id, tmsg.id))
+            elif self.tAPI.db[str(tmsg.pers_id)]['known_words'].count() == 0:
+                print(self.tAPI.send("Вы не переводили слов, поэтому не могу запустить этот режим.", tmsg.chat_id, tmsg.id))
+            else:
+                return True
+        return False
+
+    def run(self, tmsg):
+        collection = self.tAPI.db[str(tmsg.pers_id)]['known_words']
+        if (tmsg.pers_id, tmsg.chat_id) in self.waitlist:
+            if tmsg.text == "/Stop":
+                self.tAPI.send("Я вышел из режима \"simple cards\".",
+                               tmsg.chat_id, tmsg.id)
+                if (tmsg.pers_id, tmsg.chat_id) in self.waitlist:
+                    self.waitlist.pop((tmsg.pers_id, tmsg.chat_id))
+                return 0
+            elif tmsg.text == "/No":
+                post = collection.find_one({"_id": self.waitlist[(tmsg.pers_id, tmsg.chat_id)]})
+                post = self.tAPI.db.tr.find_one({"word": post['word']})
+                self.tAPI.send(post["trl"], tmsg.chat_id, tmsg.id)
+                collection.update_one(
+                    {"_id": self.waitlist[(tmsg.pers_id, tmsg.chat_id)]},
+                    {
+                        "$set": {
+                            "lastRevised": datetime.datetime.utcnow()
+                        }
+                    }
+                )
+            elif tmsg.text == "/Yes":
+                collection.update_one(
+                    {"_id": self.waitlist[(tmsg.pers_id, tmsg.chat_id)]},
+                    {
+                        "$set": {
+                            "lastRevised": datetime.datetime.utcnow()
+                        }
+                    }
+                )
+            else:
+                self.tAPI.send("Неожиданный ответ! Попробуйте еще раз.",
+                               tmsg.chat_id, tmsg.id)
+                return 0
+        post = collection.find_one(
+            {"lastRevised":
+                 {"$lt": datetime.datetime.utcnow() - datetime.timedelta(minutes=self.cooldown_m)}
+             })
+        if post == None:
+            if (tmsg.pers_id, tmsg.chat_id) in self.waitlist:
+                self.waitlist.pop((tmsg.pers_id, tmsg.chat_id))
+            self.tAPI.send("Мне не о чем вас спросить сейчас, попробуйте включить этот режим через несколько("
+                           + str(self.cooldown_m) + ") минут.\n"
+                                                    "Я вышел из режима \"simple cards\".",
+                           tmsg.chat_id, tmsg.id)
+        else:
+            print(self.tAPI.send("Помните ли вы слово \"" + post['word'] + "\"?",
+                                 tmsg.chat_id, tmsg.id, keyboard=[["/Yes"], ["/No"], ["/Stop"]]))
+            self.waitlist[(tmsg.pers_id, tmsg.chat_id)] = post["_id"]
+        return 0
+            # TODO: TranslationCard.run(tmsg)
