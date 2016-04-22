@@ -25,5 +25,7 @@ config['included_workers'] = [
     "PhraseTranslator",
     "Info"
 ]
+config["cards_is_allowed_for_groups"] = True
+config["card_cooldown_at_minutes"] = 1
 config.initial_comment = ["Change values which you want, rename file to \"config.cfg\" and delete this string!"]
 config.write()

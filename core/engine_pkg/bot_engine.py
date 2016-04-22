@@ -35,6 +35,7 @@ class BotCycle:
                         if tmsg.text.startswith("//"):
                             continue
                         print(tmsg.text)
+                        tmsg.textmod()
                         try:
                             # is_running = self.workers_list.run_list(tmsg)
                             for worker in self.workers_list:
