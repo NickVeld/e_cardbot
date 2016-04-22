@@ -27,6 +27,8 @@ data["mongo_name"] = cfg['mongo_settings']['name']
 data["mongo_port"] = int(cfg['mongo_settings']['port'])
 data["db_name"] = cfg['mongo_settings']['db_name']
 data["admin_ids"] = cfg['admins_ids']
+data["cards_groups"] = cfg["cards_is_allowed_for_groups"]
+data["cooldown_m"] = cfg["card_cooldown_at_minutes"]
 
 tapi = bot_api.API(data)
 # workers = (lworkers.Blacklist(data), lworkers.Stop(data), lworkers.Translator(data),

@@ -10,10 +10,12 @@ __author__ = 'NickVeld'
 class API:
     db = None
     admin_ids = set()
-    # API_KEY = ""
+    API_KEY = ""
     DICT_KEY = ""
     TR_KEY = ""
     DB_IS_ENABLED = False
+    NO_CARDS_GROUPS = True
+    COOLDOWN_M = 1
 
     def __init__(self, data):
         self.API_KEY = data["api_key"]
@@ -21,6 +23,8 @@ class API:
         self.TR_KEY = data["tr_key"]
         self.admin_ids = data["admin_ids"]
         self.DB_IS_ENABLED = data["db_is_enabled"]
+        self.NO_CARDS_GROUPS = not data["cards_groups"]
+        self.COOLDOWN_M = int(data["cooldown_m"])
         self.db = MongoClient(data["mongo_name"], data["mongo_port"])["e_card"]
 
     def get(self, toffset=0):
