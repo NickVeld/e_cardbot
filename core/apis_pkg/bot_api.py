@@ -17,15 +17,31 @@ class API:
     NO_CARDS_GROUPS = True
     COOLDOWN_M = 1
 
-    def __init__(self, data):
-        self.telegram = Tg_api(data["api_key"])
-        self.translator = Translator(data["dict_key"], data["tr_key"])
+    def __init__(self):
+        self.telegram = Tg_api()
+        self.translator = Translator()
 
-        self.admin_ids = data["admin_ids"]
-        self.DB_IS_ENABLED = data["db_is_enabled"]
-        self.NO_CARDS_GROUPS = not data["cards_groups"]
-        self.COOLDOWN_M = int(data["cooldown_m"])
-        self.db = MongoClient(data["mongo_name"], data["mongo_port"])["e_card"] if self.DB_IS_ENABLED else None
+    # def __init__(self, data):
+    #     self.telegram = Tg_api(data["api_key"])
+    #     self.translator = Translator(data["dict_key"], data["tr_key"])
+    #
+    #     self.admin_ids = data["admin_ids"]
+    #     self.DB_IS_ENABLED = data["db_is_enabled"]
+    #     self.NO_CARDS_GROUPS = not data["cards_groups"]
+    #     self.COOLDOWN_M = int(data["cooldown_m"])
+    #     self.db = MongoClient(data["mongo_name"], data["mongo_port"])["e_card"] if self.DB_IS_ENABLED else None
+
+    def get_from_config(self, cfg):
+        self.DB_IS_ENABLED = cfg['mongo_settings']['isEnabled'] == 'True'
+        self.admin_ids = cfg['admins_ids']
+        self.NO_CARDS_GROUPS = cfg["cards_is_allowed_for_groups"]
+        self.COOLDOWN_M = cfg["card_cooldown_at_minutes"]
+
+        self.db = (MongoClient(cfg['mongo_settings']['name'], int(cfg['mongo_settings']['port']))
+                   [cfg['mongo_settings']['db_name']] if self.DB_IS_ENABLED else None)
+
+        self.telegram.get_from_config(cfg['APIs'])
+        self.translator.get_from_config(cfg['APIs'])
 
     def get(self, toffset=0):
         return self.telegram.get(toffset)
@@ -53,8 +69,14 @@ class API:
 class Tg_api:
     API_KEY = ""
 
-    def __init__(self, api_key):
-        self.API_KEY = api_key
+    def __init__(self):
+        pass
+
+    # def __init__(self, api_key):
+    #     self.API_KEY = api_key
+
+    def get_from_config(self, cfg):
+        self.API_KEY = cfg['telegram_api']
 
     def get(self, toffset=0):
         method = 'getUpdates'
@@ -133,9 +155,16 @@ class Translator:
     DICT_KEY = ""
     TR_KEY = ""
 
-    def __init__(self, dict_key, tr_key):
-        self.DICT_KEY = dict_key
-        self.TR_KEY = tr_key
+    def __init__(self):
+        pass
+
+    # def __init__(self, dict_key, tr_key):
+    #     self.DICT_KEY = dict_key
+    #     self.TR_KEY = tr_key
+
+    def get_from_config(self, cfg):
+        self.DICT_KEY = cfg['dictionary_api']
+        self.TR_KEY = cfg['translator_api']
 
     def translate(self, request, lang, userl="en"):
         req = requests.get(

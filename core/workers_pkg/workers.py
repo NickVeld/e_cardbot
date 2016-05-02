@@ -2,6 +2,7 @@
 
 import datetime
 import random
+import sys
 
 class WorkersList(type):
     workers = []
@@ -12,16 +13,25 @@ class WorkersList(type):
             WorkersList.workers.append((name, worker_class))
         return worker_class
 
-    # @staticmethod
-    # def run_list(tmsg):
-    #     for worker in WorkersList.workers:
-    #         if worker.is_it_for_me(tmsg):
-    #             cmd = worker.run(tmsg)
-    #             if cmd == 2:
-    #                 return False
-    #             break
-    #     return True
+    def get_workers(cls, list, tapi):
+        workers = []
+        # available = cls.workers
+        for worker in cls.workers:
+            exist = False
+            for str in list:
+                if str == worker[0]:
+                    exist = True
+                    break
+            if not exist:
+                cls.workers.remove(worker)
 
+        for str in list:
+            try:
+                workers.append(getattr(sys.modules[__name__], str)(tapi))
+                print(str)
+            except:
+                print("There isn't " + str)
+        return workers
 
 class BaseWorker(object, metaclass=WorkersList):
     __not_bot__ = True

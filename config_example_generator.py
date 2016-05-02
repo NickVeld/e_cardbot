@@ -12,7 +12,7 @@ config['mongo_settings'] = {
     'isEnabled': False,
     'name': "mongo",
     'port': "27017",
-    'db_name': "e-card"
+    'db_name': "e_card"
 }
 config['admins_ids'] = [
     "admin_id0",
