@@ -22,26 +22,15 @@ class Msg():
 
     @property
     def name(self):
-        if 'first_name' in self.msg['message']['from']:
-            who = self.msg['message']['from']['first_name']
-        else:
-            who = "Anonymous"
-        return who
+        return self.msg['message']['from'].get('first_name', 'Anonymous')
 
     @property
     def surname(self):
-        if 'last_name' in self.msg['message']['from']:
-            who = self.msg['message']['from']['last_name']
-        else:
-            who = "Anonymous"
-        return who
+        return self.msg['message']['from'].get('last_name', 'Anonymous')
 
     @property
     def text(self):
-        if 'text' in self.msg['message']:
-            return self.msg['message']['text']
-        else:
-            return ""
+        return self.msg['message'].get('text', '')
 
     def text_change_to(self, new_v):
         self.msg['message']['text'] = new_v

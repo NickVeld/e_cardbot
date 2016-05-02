@@ -9,23 +9,52 @@ __author__ = 'NickVeld'
 
 class API:
     db = None
+    telegram = None
+    translator = None
+
     admin_ids = set()
-    API_KEY = ""
-    DICT_KEY = ""
-    TR_KEY = ""
     DB_IS_ENABLED = False
     NO_CARDS_GROUPS = True
     COOLDOWN_M = 1
 
     def __init__(self, data):
-        self.API_KEY = data["api_key"]
-        self.DICT_KEY = data["dict_key"]
-        self.TR_KEY = data["tr_key"]
+        self.telegram = Tg_api(data["api_key"])
+        self.translator = Translator(data["dict_key"], data["tr_key"])
+
         self.admin_ids = data["admin_ids"]
         self.DB_IS_ENABLED = data["db_is_enabled"]
         self.NO_CARDS_GROUPS = not data["cards_groups"]
         self.COOLDOWN_M = int(data["cooldown_m"])
-        self.db = MongoClient(data["mongo_name"], data["mongo_port"])["e_card"]
+        self.db = MongoClient(data["mongo_name"], data["mongo_port"])["e_card"] if self.DB_IS_ENABLED else None
+
+    def get(self, toffset=0):
+        return self.telegram.get(toffset)
+
+    def get_msg(self, offset):
+        while True:
+            new_msgs = self.get(offset)
+            if new_msgs is None:
+                continue
+
+            for msg in new_msgs['result']:
+                offset = msg['update_id']
+                print(offset)
+                yield msg
+
+    def send(self, message, chat_id, reply_to_message_id=0, keyboard=None):
+        return self.telegram.send(message, chat_id, reply_to_message_id, keyboard)
+
+    def translate(self, request, lang, userl="en"):
+        return self.translator.translate(request, lang, userl)
+
+    def translateph(self, request, lang, userl="en"):
+        return self.translator.translateph(request, lang, userl)
+
+class Tg_api:
+    API_KEY = ""
+
+    def __init__(self, api_key):
+        self.API_KEY = api_key
 
     def get(self, toffset=0):
         method = 'getUpdates'
@@ -55,6 +84,17 @@ class API:
             print("Error in get()!")
             print(type(ex), ex.__str__())
         return None
+
+    def get_msg(self, offset):
+        while True:
+            new_msgs = self.get(offset)
+            if new_msgs is None:
+                continue
+
+            for msg in new_msgs['result']:
+                offset = msg['update_id']
+                print(offset)
+                yield msg
 
     def send(self, message, chat_id, reply_to_message_id=0, keyboard=None):
         method = 'sendMessage'
@@ -88,6 +128,14 @@ class API:
             print("Error in send()!")
             print(type(ex), ex.__str__())
         return message
+
+class Translator:
+    DICT_KEY = ""
+    TR_KEY = ""
+
+    def __init__(self, dict_key, tr_key):
+        self.DICT_KEY = dict_key
+        self.TR_KEY = tr_key
 
     def translate(self, request, lang, userl="en"):
         req = requests.get(

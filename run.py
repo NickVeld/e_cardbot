@@ -23,14 +23,15 @@ data["cooldown_m"] = cfg["card_cooldown_at_minutes"]
 tapi = bot_api.API(data)
 
 workers = []
-for worker in lworkers.WorkersList.workers:
+available = lworkers.WorkersList.workers
+for worker in available:
     exist = False
     for str in cfg['included_workers']:
         if str == worker[0]:
             exist = True
             break
     if not exist:
-        lworkers.WorkersList.workers.remove(worker)
+        available.remove(worker)
 
 for str in cfg['included_workers']:
     try:

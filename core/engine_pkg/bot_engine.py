@@ -16,36 +16,25 @@ class BotCycle:
         print("Guess who's back!")
 
         try:
-            while is_running:
-                # try:
-                new_msgs = self.tapi.get(offset)
-                # except:
-                #    print("Exception!")
-                #    continue
-                if new_msgs is None:
-                    continue
-
-                for msg in new_msgs['result']:
-                    if not is_running:
-                        break
-                    tmsg = Msg(msg)
-                    offset = tmsg.upd_id
-                    print(offset)
-                    if 'text' in msg['message']:
-                        if tmsg.text.startswith("//"):
-                            continue
-                        print(tmsg.text)
-                        tmsg.textmod()
-                        try:
-                            # is_running = self.workers_list.run_list(tmsg)
-                            for worker in self.workers_list:
-                                if worker.is_it_for_me(tmsg):
-                                    cmd = worker.run(tmsg)
-                                    if cmd == 2:
-                                        is_running = False
-                                    break
-                        except UnicodeEncodeError:
-                            print(self.tapi.send("I don't like your language!", tmsg.chat_id))
+            for msg in self.tapi.get_msg(offset):
+                if not is_running:
+                    break
+                tmsg = Msg(msg)
+                if tmsg.text != "":
+                    if tmsg.text.startswith("//"):
+                        continue
+                    print(tmsg.text)
+                    tmsg.textmod()
+                    try:
+                        # is_running = self.workers_list.run_list(tmsg)
+                        for worker in self.workers_list:
+                            if worker.is_it_for_me(tmsg):
+                                cmd = worker.run(tmsg)
+                                if cmd == 2:
+                                    is_running = False
+                                break
+                    except UnicodeEncodeError:
+                        print(self.tapi.send("I don't like your language!", tmsg.chat_id))
         except Exception as ex:
             print(type(ex), ex.__str__())
 
