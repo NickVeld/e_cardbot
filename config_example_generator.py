@@ -4,6 +4,7 @@ isExample = True
 config = ConfigObj()
 config.filename = "config_example.cfg"
 config['APIs'] = {
+    'bot_nick': "@coolbot",
     'telegram_api': "000000000:api_key",
     'dictionary_api': "dict.1.1.dict.key",
     'translator_api': "trnsl.1.1.tr.key"

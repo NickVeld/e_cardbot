@@ -1,8 +1,10 @@
 class Msg():
     msg = None
+    BOT_NAME = ""
 
-    def __init__(self, msg):
+    def __init__(self, msg, bot_nick):
         self.msg = msg
+        self.BOT_NICK = bot_nick
 
     @property
     def id(self):
@@ -36,4 +38,4 @@ class Msg():
         self.msg['message']['text'] = new_v
 
     def textmod(self):
-        self.msg['message']['text'] = self.msg['message']['text'].strip().replace("@E_CardBot", "").lower()
+        self.msg['message']['text'] = self.msg['message']['text'].strip().replace(self.BOT_NICK, "")

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import random
 import requests
 import json
 from pymongo import MongoClient
@@ -11,8 +12,10 @@ class API:
     db = None
     telegram = None
     translator = None
+    offset = 0
 
     admin_ids = set()
+    BOT_NICK = ""
     DB_IS_ENABLED = False
     NO_CARDS_GROUPS = True
     COOLDOWN_M = 1
@@ -34,11 +37,13 @@ class API:
     def get_from_config(self, cfg):
         self.DB_IS_ENABLED = cfg['mongo_settings']['isEnabled'] == 'True'
         self.admin_ids = cfg['admins_ids']
-        self.NO_CARDS_GROUPS = cfg["cards_is_allowed_for_groups"]
-        self.COOLDOWN_M = cfg["card_cooldown_at_minutes"]
+        self.NO_CARDS_GROUPS = cfg["cards_is_allowed_for_groups"] == 'False'
+        self.COOLDOWN_M = int(cfg["card_cooldown_at_minutes"])
 
         self.db = (MongoClient(cfg['mongo_settings']['name'], int(cfg['mongo_settings']['port']))
                    [cfg['mongo_settings']['db_name']] if self.DB_IS_ENABLED else None)
+
+        self.BOT_NICK = cfg['APIs']['bot_nick']
 
         self.telegram.get_from_config(cfg['APIs'])
         self.translator.get_from_config(cfg['APIs'])
@@ -46,15 +51,15 @@ class API:
     def get(self, toffset=0):
         return self.telegram.get(toffset)
 
-    def get_msg(self, offset):
+    def get_msg(self):
         while True:
-            new_msgs = self.get(offset)
+            new_msgs = self.get(self.offset)
             if new_msgs is None:
                 continue
 
             for msg in new_msgs['result']:
-                offset = msg['update_id']
-                print(offset)
+                self.offset = msg['update_id']
+                print(self.offset)
                 yield msg
 
     def send(self, message, chat_id, reply_to_message_id=0, keyboard=None):
@@ -65,6 +70,12 @@ class API:
 
     def translateph(self, request, lang, userl="en"):
         return self.translator.translateph(request, lang, userl)
+
+    def get_random_doc(self, collection, request=None):
+        return collection.find().skip(random.randint(0, collection.count()-1)).limit(1)[0] \
+            if request == None else \
+            collection.find(request).skip(random.randint(0, collection.count()-1)).limit(1)[0]
+        #return collection.find_one() if request==None else collection.find_one(request)
 
 class Tg_api:
     API_KEY = ""
@@ -78,11 +89,11 @@ class Tg_api:
     def get_from_config(self, cfg):
         self.API_KEY = cfg['telegram_api']
 
-    def get(self, toffset=0):
+    def get(self, toffset=0, timeout=29):
         method = 'getUpdates'
         params = {
             'offset': toffset + 1,
-            'timeout': 28
+            'timeout': timeout
         }
         try:
             req = requests.request(
@@ -92,7 +103,7 @@ class Tg_api:
                     method=method
                 ),
                 params=params,
-                timeout=30
+                timeout=timeout+1
             )
             if req.text is "":
                 return None
@@ -106,17 +117,6 @@ class Tg_api:
             print("Error in get()!")
             print(type(ex), ex.__str__())
         return None
-
-    def get_msg(self, offset):
-        while True:
-            new_msgs = self.get(offset)
-            if new_msgs is None:
-                continue
-
-            for msg in new_msgs['result']:
-                offset = msg['update_id']
-                print(offset)
-                yield msg
 
     def send(self, message, chat_id, reply_to_message_id=0, keyboard=None):
         method = 'sendMessage'

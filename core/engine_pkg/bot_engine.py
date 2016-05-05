@@ -10,16 +10,13 @@ class BotCycle:
         self.workers_list = workers_list
 
     def run(self):
-        offset = 0
         is_running = True
         tmsg = None
         print("Guess who's back!")
 
         try:
-            for msg in self.tapi.get_msg(offset):
-                if not is_running:
-                    break
-                tmsg = Msg(msg)
+            for msg in self.tapi.get_msg():
+                tmsg = Msg(msg, self.tapi.BOT_NICK)
                 if tmsg.text != "":
                     if tmsg.text.startswith("//"):
                         continue
@@ -35,7 +32,9 @@ class BotCycle:
                                 break
                     except UnicodeEncodeError:
                         print(self.tapi.send("I don't like your language!", tmsg.chat_id))
+                if not is_running:
+                    break
         except Exception as ex:
             print(type(ex), ex.__str__())
 
-        self.tapi.get(offset)
+        # self.tapi.get(offset, timeout=1)

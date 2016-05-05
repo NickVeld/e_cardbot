@@ -33,6 +33,7 @@ class WorkersList(type):
                 print("There isn't " + str)
         return workers
 
+
 class BaseWorker(object, metaclass=WorkersList):
     __not_bot__ = True
 
@@ -93,6 +94,8 @@ class Translator(BaseWorker):
                 txt = tmsg.text[3:].lstrip()
         else:
             txt = tmsg.text.lstrip()
+        if txt.startswith('/'):
+            txt = txt[1:]
         # res = ""
         post = None
         if self.tAPI.DB_IS_ENABLED:
@@ -107,7 +110,7 @@ class Translator(BaseWorker):
                 lang = "ru"
             if res == "":
                 print(self.tAPI.send("Нет перевода!", tmsg.chat_id, tmsg.id))
-            else:
+            elif lang == "":
                 lang = "en"
             if lang != "":
                 print(self.tAPI.send(res, tmsg.chat_id, tmsg.id))
@@ -267,8 +270,8 @@ class TranslationCard(BaseWorker):
         if tmsg.text.startswith("/cards_ytr"):
             if not self.tAPI.DB_IS_ENABLED:
                 print(self.tAPI.send("Этот режим сейчас недоступен!", tmsg.chat_id, tmsg.id))
-            elif self.tAPI.NO_CARDS_GROUPS and tmsg.chat_id != tmsg.pers_id:
-                print(self.tAPI.send("Использование режима в групповом чате отключено!", tmsg.chat_id, tmsg.id))
+            # elif self.tAPI.NO_CARDS_GROUPS and tmsg.chat_id != tmsg.pers_id:
+            #     print(self.tAPI.send("Использование режима в групповом чате отключено!", tmsg.chat_id, tmsg.id))
             elif self.tAPI.db[str(tmsg.pers_id)]['known_words'].count() == 0:
                 print(self.tAPI.send("Вы не переводили слов, поэтому не могу запустить этот режим.", tmsg.chat_id, tmsg.id))
             else:
@@ -316,11 +319,12 @@ class TranslationCard(BaseWorker):
                                                     "Я вышел из режима \"translation cards\".",
                            tmsg.chat_id, tmsg.id)
         else:
-            print(self.tAPI.send("Напишите /> и без пробела слово, которому соответствует этот перевод:\n\"" +
+            print(self.tAPI.send("Напишите /* и без пробела слово, которому соответствует этот перевод:\n\"" +
                                  self.tAPI.db.tr.find_one({"word": post['word']})["trl"] + "\"",
                                  tmsg.chat_id, tmsg.id))
             self.waitlist[(tmsg.pers_id, tmsg.chat_id)] = post["_id"]
         return 0
+
 
 class OptionCard(BaseWorker):
 
@@ -388,17 +392,121 @@ class OptionCard(BaseWorker):
             chosen = collection.find()
             for doc in chosen:
                 if doc['word'] != post['word'] and doc['lang'] == post['lang']:
-                    current_keyboard.append(["/>" + doc['word']])
+                    current_keyboard.insert(random.randint(0, len(current_keyboard)), ["/*" + doc['word']])
                     if len(current_keyboard) == 3:
                         break
             if len(current_keyboard) < 3:
                 print(self.tAPI.send("Вы не перевели еще 4 слов на одном языке, поэтому не могу запустить этот режим.",
                                      tmsg.chat_id, tmsg.id))
                 return 0
-            current_keyboard.insert(random.randint(0,3), ["/>" + post['word']])
+            current_keyboard.insert(random.randint(0, len(current_keyboard)), ["/>" + post['word']])
             print(self.tAPI.send(
                 "Выберите из предложенных слов слово, которому соответствует этот перевод:\n\"" +
                 self.tAPI.db.tr.find_one({"word": post['word']})["trl"] + "\"",
                 tmsg.chat_id, tmsg.id, keyboard=current_keyboard))
             self.waitlist[(tmsg.pers_id, tmsg.chat_id)] = [post["_id"], current_keyboard]
         return 0
+
+
+class HangCard(BaseWorker):
+
+    HELP = "Команда \"/cards_hang\" включает игровой режим карточек, Вам нужно угадать некогда переведенное слово.\n\n"
+
+    waitlist = dict()
+
+    def is_it_for_me(self, tmsg):
+        if (tmsg.pers_id, tmsg.chat_id) in self.waitlist:
+            return True
+        if tmsg.text.startswith("/cards_hang"):
+            if not self.tAPI.DB_IS_ENABLED:
+                print(self.tAPI.send("Этот режим сейчас недоступен!", tmsg.chat_id, tmsg.id))
+            elif self.tAPI.NO_CARDS_GROUPS and tmsg.chat_id != tmsg.pers_id:
+                print(self.tAPI.send("Использование режима в групповом чате отключено!", tmsg.chat_id, tmsg.id))
+            elif self.tAPI.db[str(tmsg.pers_id)]['known_words'].count() == 0:
+                print(self.tAPI.send("Вы не переводили слов, поэтому не могу запустить этот режим.", tmsg.chat_id, tmsg.id))
+            else:
+                self.tAPI.send("/Stop - остановить режим. \n /Next - следующее слово.", tmsg.chat_id, tmsg.id)
+                return True
+        return False
+
+    def run(self, tmsg):
+        collection = self.tAPI.db[str(tmsg.pers_id)]['known_words']
+        if (tmsg.pers_id, tmsg.chat_id) in self.waitlist:
+            if tmsg.text == "/Stop":
+                self.tAPI.send("Я вышел из режима \"hang cards\".",
+                               tmsg.chat_id, tmsg.id)
+                if (tmsg.pers_id, tmsg.chat_id) in self.waitlist:
+                    self.waitlist.pop((tmsg.pers_id, tmsg.chat_id))
+                return 0
+            else:
+                if tmsg.text != "/Next":
+                    if self.existance_del(tmsg.text, self.waitlist[(tmsg.pers_id, tmsg.chat_id)][3]):
+                        index = self.waitlist[(tmsg.pers_id, tmsg.chat_id)][0].find(tmsg.text[1:].lower())
+                        if index == -1:
+                            self.waitlist[(tmsg.pers_id, tmsg.chat_id)][2] -= 1
+                            self.tAPI.send("Нет такой буквы. \n\n" +
+                                           self.state_to_string(self.waitlist[(tmsg.pers_id, tmsg.chat_id)]),
+                                           tmsg.chat_id, tmsg.id, keyboard=self.waitlist[(tmsg.pers_id, tmsg.chat_id)][3])
+                            if self.waitlist[(tmsg.pers_id, tmsg.chat_id)][2] == 0:
+                                self.tAPI.send("Вы проиграли. :(\nОтвет: " + self.waitlist[(tmsg.pers_id, tmsg.chat_id)][4],
+                                               tmsg.chat_id, tmsg.id)
+                                self.tAPI.send("/Stop - остановить режим. \n /Next - следующее слово.", tmsg.chat_id, tmsg.id)
+                            else:
+                                return 0
+                        else:
+                            while index != -1:
+                                self.waitlist[(tmsg.pers_id, tmsg.chat_id)][1] = \
+                                    self.waitlist[(tmsg.pers_id, tmsg.chat_id)][1][:2*index] \
+                                    + tmsg.text[1:].lower() \
+                                    + self.waitlist[(tmsg.pers_id, tmsg.chat_id)][1][2*index+1:]
+                                self.waitlist[(tmsg.pers_id, tmsg.chat_id)][0] = \
+                                    self.waitlist[(tmsg.pers_id, tmsg.chat_id)][0][:index] \
+                                    + "-" \
+                                    + self.waitlist[(tmsg.pers_id, tmsg.chat_id)][0][index + 1:]
+                                index = self.waitlist[(tmsg.pers_id, tmsg.chat_id)][0].find(tmsg.text[1:].lower())
+                            self.tAPI.send("Есть такая буква. \n\n" +
+                                           self.state_to_string(self.waitlist[(tmsg.pers_id, tmsg.chat_id)]),
+                                           tmsg.chat_id, tmsg.id, keyboard=self.waitlist[(tmsg.pers_id, tmsg.chat_id)][3])
+                            if len(self.waitlist[(tmsg.pers_id, tmsg.chat_id)][0]) \
+                                == self.waitlist[(tmsg.pers_id, tmsg.chat_id)][0].count("-"):
+                                self.tAPI.send("Вы выиграли!", tmsg.chat_id, tmsg.id)
+                                self.tAPI.send("/Stop - остановить режим. \n /Next - следующее слово.", tmsg.chat_id, tmsg.id)
+                            else:
+                                return 0
+                    else:
+                        self.tAPI.send("Некорректный ответ. Попробуйте еще раз. \n\n" +
+                                   self.state_to_string(self.waitlist[(tmsg.pers_id, tmsg.chat_id)]),
+                                   tmsg.chat_id, tmsg.id, keyboard=self.waitlist[(tmsg.pers_id, tmsg.chat_id)][3])
+                        return 0
+        post = self.tAPI.get_random_doc(collection)
+        if post == None:
+            if (tmsg.pers_id, tmsg.chat_id) in self.waitlist:
+                self.waitlist.pop((tmsg.pers_id, tmsg.chat_id))
+            self.tAPI.send("Мне не о чем вас спросить.", tmsg.chat_id, tmsg.id)
+        else:
+            state = [post['word'], "- " * len(post['word']), 6, self.default_keyboard(post['lang']), post['word']]
+            print(self.tAPI.send(self.state_to_string(state), tmsg.chat_id, tmsg.id, state[3]))
+            self.waitlist[(tmsg.pers_id, tmsg.chat_id)] = state
+        return 0
+
+    def state_to_string(self, state):
+        return state[1] + "\nВаше количество жизней: " + str(state[2]) + "."
+
+    def existance_del(self, request, keyboard):
+        for i in range(0, len(keyboard)-1):
+            if request in keyboard[i]:
+                keyboard[i].pop(keyboard[i].index(request))
+                return True
+        return False
+
+    def default_keyboard(self, lang):
+        if lang == "en":
+            return [["/a", "/b", "/c", "/d", "/e", "/f", "/g", "/h", "/i"],
+                    ["/j", "/k", "/l", "/m", "/n", "/o", "/p", "/q", "/r"],
+                    ["/s", "/t", "/u", "/v", "/w", "/x", "/y", "/z"],["/Next", "/Stop"]]
+        elif lang == "ru":
+            return [["/а", "/б", "/в", "/г", "/д", "/е", "/ё", "/ж", "/з", "/и", "/й"],
+                    ["/к", "/л", "/м", "/н", "/о", "/п", "/р", "/с", "/т", "/у", "/ф"],
+                    ["/х", "/ц", "/ч", "/ш", "/щ", "/ъ", "/ы", "/ь", "/э", "/ю", "/я"], ["/Next", "/Stop"]]
+        else:
+            return [["No keyboard for this language!"], ["/Next", "/Stop"]]
