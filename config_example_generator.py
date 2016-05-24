@@ -5,6 +5,9 @@ config = ConfigObj()
 config.filename = "config_example.cfg"
 config['APIs'] = {
     'bot_nick': "@coolbot",
+    'telegram_chatlink': 'https://api.telegram.org/bot',
+    'dictionary_link': 'https://dictionary.yandex.net/api/v1/dicservice.json/lookup?',
+    'translator_link': 'https://translate.yandex.net/api/v1.5/tr.json/translate?',
     'telegram_api': "000000000:api_key",
     'dictionary_api': "dict.1.1.dict.key",
     'translator_api': "trnsl.1.1.tr.key"
@@ -24,7 +27,11 @@ config['included_workers'] = [
     "Stop",
     "Translator",
     "PhraseTranslator",
-    "Info"
+    "Info",
+    "SimpleCard",
+    "TranslationCard",
+    "OptionCard",
+    "HangCard"
 ]
 config["cards_is_allowed_for_groups"] = True
 config["card_cooldown_at_minutes"] = 1

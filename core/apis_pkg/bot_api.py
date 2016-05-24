@@ -9,20 +9,17 @@ __author__ = 'NickVeld'
 
 
 class API:
-    db = None
-    telegram = None
-    translator = None
-    offset = 0
-
-    admin_ids = set()
-    BOT_NICK = ""
-    DB_IS_ENABLED = False
-    NO_CARDS_GROUPS = True
-    COOLDOWN_M = 1
-
     def __init__(self):
         self.telegram = Tg_api()
         self.translator = Translator()
+        self.db = None
+        self.offset = 0
+
+        self.admin_ids = set()
+        self.BOT_NICK = ""
+        self.DB_IS_ENABLED = False
+        self.NO_CARDS_GROUPS = True
+        self.COOLDOWN_M = 1
 
     # def __init__(self, data):
     #     self.telegram = Tg_api(data["api_key"])
@@ -78,7 +75,6 @@ class API:
         #return collection.find_one() if request==None else collection.find_one(request)
 
 class Tg_api:
-    API_KEY = ""
 
     def __init__(self):
         pass
@@ -87,6 +83,7 @@ class Tg_api:
     #     self.API_KEY = api_key
 
     def get_from_config(self, cfg):
+        self.CHAT_LINK = cfg['telegram_chatlink']
         self.API_KEY = cfg['telegram_api']
 
     def get(self, toffset=0, timeout=29):
@@ -98,7 +95,8 @@ class Tg_api:
         try:
             req = requests.request(
                 'POST',
-                'https://api.telegram.org/bot{api_key}/{method}'.format(
+                '{link}{api_key}/{method}'.format(
+                    link=self.CHAT_LINK,
                     api_key=self.API_KEY,
                     method=method
                 ),
@@ -137,7 +135,8 @@ class Tg_api:
         try:
             req = requests.request(
                 'POST',
-                'https://api.telegram.org/bot{api_key}/{method}'.format(
+                '{link}{api_key}/{method}'.format(
+                    link = self.CHAT_LINK,
                     api_key=self.API_KEY,
                     method=method
                 ),
@@ -152,11 +151,11 @@ class Tg_api:
         return message
 
 class Translator:
-    DICT_KEY = ""
-    TR_KEY = ""
-
     def __init__(self):
-        pass
+        self.DICT_KEY = ""
+        self.TR_KEY = ""
+        self.DICT_LINK = ""
+        self.TR_LINK = ""
 
     # def __init__(self, dict_key, tr_key):
     #     self.DICT_KEY = dict_key
@@ -165,10 +164,13 @@ class Translator:
     def get_from_config(self, cfg):
         self.DICT_KEY = cfg['dictionary_api']
         self.TR_KEY = cfg['translator_api']
+        self.DICT_LINK = cfg['dictionary_link']
+        self.TR_LINK = cfg['translator_link']
 
     def translate(self, request, lang, userl="en"):
         req = requests.get(
-            "https://dictionary.yandex.net/api/v1/dicservice.json/lookup?key={dict_key}&lang={lang}&text={request})".format(
+            "{link}key={dict_key}&lang={lang}&text={request})".format(
+                link=self.DICT_LINK,
                 dict_key=self.DICT_KEY,
                 lang=lang,
                 request=request
@@ -194,7 +196,8 @@ class Translator:
 
     def translateph(self, request, lang, userl="en"):
         req = requests.get(
-            "https://translate.yandex.net/api/v1.5/tr.json/translate?key={tr_key}&text={request}&lang={lang}".format(
+            "{link}key={tr_key}&text={request}&lang={lang}".format(
+                link=self.TR_LINK,
                 tr_key=self.TR_KEY,
                 lang=lang,
                 request=request

@@ -83,7 +83,7 @@ class Translator(BaseWorker):
     def run(self, tmsg):
         is_chain = (tmsg.pers_id, tmsg.chat_id) in self.waitlist
         txt = ""
-        tmsg.textmod()
+        tmsg.text_change_to(tmsg.text.lower())
         if not (is_chain or
                 ((tmsg.pers_id == tmsg.chat_id) and not tmsg.text.startswith("/"))):
             if len(tmsg.text) < 4:
@@ -379,7 +379,7 @@ class OptionCard(BaseWorker):
         post = collection.find_one(
             {"lastRevised":
                  {"$lt": datetime.datetime.utcnow() - datetime.timedelta(minutes=self.tAPI.COOLDOWN_M)}
-             })
+            })
         if post == None:
             if (tmsg.pers_id, tmsg.chat_id) in self.waitlist:
                 self.waitlist.pop((tmsg.pers_id, tmsg.chat_id))

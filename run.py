@@ -30,5 +30,6 @@ bs.run()
 try:
     f = open("storage.yml", 'w')
     f.write(str(bs.tapi.offset) + '\n')
+    f.close()
 except Exception as ex:
     print(type(ex), ex.__str__())
