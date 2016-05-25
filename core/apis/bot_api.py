@@ -60,7 +60,7 @@ class API:
                 yield msg
 
     def send(self, message, chat_id, reply_to_message_id=0, keyboard=None):
-        return self.telegram.send(message, chat_id, reply_to_message_id, keyboard)
+        return self.telegram.send(message, chat_id, reply_to_message_id)
 
     def translate(self, request, lang, userl="en"):
         return self.translator.translate(request, lang, userl)
@@ -116,7 +116,37 @@ class Tg_api:
             print(type(ex), ex.__str__())
         return None
 
-    def send(self, message, chat_id, reply_to_message_id=0, keyboard=None):
+    def send(self, message, chat_id, reply_to_message_id=0):
+        method = 'sendMessage'
+        params = {
+            'chat_id': chat_id,
+            'disable_web_page_preview': True,
+            'text': message
+        }
+        if reply_to_message_id:
+            params['reply_to_message_id'] = reply_to_message_id
+        try:
+            req = requests.request(
+                'POST',
+                '{link}{api_key}/{method}'.format(
+                    link = self.CHAT_LINK,
+                    api_key=self.API_KEY,
+                    method=method
+                ),
+                params=params,
+                timeout=30
+            )
+        except requests.exceptions.Timeout:
+            print("Timeout in send()!")
+        except Exception as ex:
+            print("Error in send()!")
+            print(type(ex), ex.__str__())
+        return message
+
+    def get_reply_keyboard(self, source):
+        return [["/{}".format(c) for c in s_in.split('\t')] for s_in in source.split('\n')]
+
+    def send_reply_keyboard(self, message, chat_id, keyboard, reply_to_message_id=0):
         method = 'sendMessage'
         params = {
             'chat_id': chat_id,
@@ -136,7 +166,41 @@ class Tg_api:
             req = requests.request(
                 'POST',
                 '{link}{api_key}/{method}'.format(
-                    link = self.CHAT_LINK,
+                    link=self.CHAT_LINK,
+                    api_key=self.API_KEY,
+                    method=method
+                ),
+                params=params,
+                timeout=30
+            )
+        except requests.exceptions.Timeout:
+            print("Timeout in send()!")
+        except Exception as ex:
+            print("Error in send()!")
+            print(type(ex), ex.__str__())
+        return message
+
+    def get_inline_keyboard(self, source):
+        return list([(["/{}".format(c) for c in s_in.split('\t')] for s_in in source.split('\n'))])  # not ready
+
+    def send_inline_keyboard(self, message, chat_id, inline_keyboard, reply_to_message_id=0):
+        method = 'sendMessage'
+        params = {
+            'chat_id': chat_id,
+            'disable_web_page_preview': True,
+            'text': message
+        }
+        if reply_to_message_id:
+            params['reply_to_message_id'] = reply_to_message_id
+        if inline_keyboard != None:
+            params["reply_markup"] = json.dumps({
+                "inline_keyboard": inline_keyboard
+            })
+        try:
+            req = requests.request(
+                'POST',
+                '{link}{api_key}/{method}'.format(
+                    link=self.CHAT_LINK,
                     api_key=self.API_KEY,
                     method=method
                 ),

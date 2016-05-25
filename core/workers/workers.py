@@ -252,8 +252,8 @@ class SimpleCard(BaseWorker):
                            "Я вышел из режима \"simple cards\".",
                             tmsg.chat_id, tmsg.id)
         else:
-            print(self.tAPI.send("Помните ли вы слово \"" + post['word'] + "\"?",
-                                 tmsg.chat_id, tmsg.id, keyboard=[["/Yes"], ["/No"], ["/Stop"]]))
+            print(self.tAPI.telegram.send_reply_keyboard("Помните ли вы слово \"" + post['word'] + "\"?",
+                                 tmsg.chat_id, [["/Yes"], ["/No"], ["/Stop"]], tmsg.id))
             self.waitlist[(tmsg.pers_id, tmsg.chat_id)] = post["_id"]
         return 0
 
@@ -373,8 +373,8 @@ class OptionCard(BaseWorker):
                         }
                     )
                 else:
-                    self.tAPI.send("Попробуйте еще раз.", tmsg.chat_id, tmsg.id,
-                                   keyboard=self.waitlist[(tmsg.pers_id, tmsg.chat_id)][1])
+                    self.tAPI.telegram.send_reply_keyboard("Попробуйте еще раз.", tmsg.chat_id,
+                                   self.waitlist[(tmsg.pers_id, tmsg.chat_id)][1], tmsg.id)
                     return 0
         post = collection.find_one(
             {"lastRevised":
@@ -400,10 +400,10 @@ class OptionCard(BaseWorker):
                                      tmsg.chat_id, tmsg.id))
                 return 0
             current_keyboard.insert(random.randint(0, len(current_keyboard)), ["/>" + post['word']])
-            print(self.tAPI.send(
+            print(self.tAPI.telegram.send_reply_keyboard(
                 "Выберите из предложенных слов слово, которому соответствует этот перевод:\n\"" +
                 self.tAPI.db.tr.find_one({"word": post['word']})["trl"] + "\"",
-                tmsg.chat_id, tmsg.id, keyboard=current_keyboard))
+                tmsg.chat_id, current_keyboard, tmsg.id))
             self.waitlist[(tmsg.pers_id, tmsg.chat_id)] = [post["_id"], current_keyboard]
         return 0
 
@@ -444,13 +444,14 @@ class HangCard(BaseWorker):
                         index = self.waitlist[(tmsg.pers_id, tmsg.chat_id)][0].find(tmsg.text[1:].lower())
                         if index == -1:
                             self.waitlist[(tmsg.pers_id, tmsg.chat_id)][2] -= 1
-                            self.tAPI.send("Нет такой буквы. \n\n" +
+                            self.tAPI.telegram.send_reply_keyboard("Нет такой буквы. \n\n" +
                                            self.state_to_string(self.waitlist[(tmsg.pers_id, tmsg.chat_id)]),
-                                           tmsg.chat_id, tmsg.id, keyboard=self.waitlist[(tmsg.pers_id, tmsg.chat_id)][3])
+                                           tmsg.chat_id, self.waitlist[(tmsg.pers_id, tmsg.chat_id)][3], tmsg.id)
                             if self.waitlist[(tmsg.pers_id, tmsg.chat_id)][2] == 0:
                                 self.tAPI.send("Вы проиграли. :(\nОтвет: " + self.waitlist[(tmsg.pers_id, tmsg.chat_id)][4],
                                                tmsg.chat_id, tmsg.id)
-                                self.tAPI.send("/Stop - остановить режим. \n /Next - следующее слово.", tmsg.chat_id, tmsg.id)
+                                self.tAPI.send("/Stop - остановить режим. \n /Next - следующее слово."
+                                               , tmsg.chat_id, tmsg.id)
                             else:
                                 return 0
                         else:
@@ -464,9 +465,9 @@ class HangCard(BaseWorker):
                                     + "-" \
                                     + self.waitlist[(tmsg.pers_id, tmsg.chat_id)][0][index + 1:]
                                 index = self.waitlist[(tmsg.pers_id, tmsg.chat_id)][0].find(tmsg.text[1:].lower())
-                            self.tAPI.send("Есть такая буква. \n\n" +
+                            self.tAPI.telegram.send_reply_keyboard("Есть такая буква. \n\n" +
                                            self.state_to_string(self.waitlist[(tmsg.pers_id, tmsg.chat_id)]),
-                                           tmsg.chat_id, tmsg.id, keyboard=self.waitlist[(tmsg.pers_id, tmsg.chat_id)][3])
+                                           tmsg.chat_id, self.waitlist[(tmsg.pers_id, tmsg.chat_id)][3], tmsg.id)
                             if len(self.waitlist[(tmsg.pers_id, tmsg.chat_id)][0]) \
                                 == self.waitlist[(tmsg.pers_id, tmsg.chat_id)][0].count("-"):
                                 self.tAPI.send("Вы выиграли!", tmsg.chat_id, tmsg.id)
@@ -474,9 +475,9 @@ class HangCard(BaseWorker):
                             else:
                                 return 0
                     else:
-                        self.tAPI.send("Некорректный ответ. Попробуйте еще раз. \n\n" +
+                        self.tAPI.telegram.send_reply_keyboard("Некорректный ответ. Попробуйте еще раз. \n\n" +
                                    self.state_to_string(self.waitlist[(tmsg.pers_id, tmsg.chat_id)]),
-                                   tmsg.chat_id, tmsg.id, keyboard=self.waitlist[(tmsg.pers_id, tmsg.chat_id)][3])
+                                   tmsg.chat_id, self.waitlist[(tmsg.pers_id, tmsg.chat_id)][3], tmsg.id)
                         return 0
         post = self.tAPI.get_random_doc(collection)
         if post == None:
@@ -485,7 +486,7 @@ class HangCard(BaseWorker):
             self.tAPI.send("Мне не о чем вас спросить.", tmsg.chat_id, tmsg.id)
         else:
             state = [post['word'], "- " * len(post['word']), 6, self.default_keyboard(post['lang']), post['word']]
-            print(self.tAPI.send(self.state_to_string(state), tmsg.chat_id, tmsg.id, state[3]))
+            print(self.tAPI.telegram.send_reply_keyboard(self.state_to_string(state), tmsg.chat_id, state[3], tmsg.id))
             self.waitlist[(tmsg.pers_id, tmsg.chat_id)] = state
         return 0
 
@@ -501,12 +502,13 @@ class HangCard(BaseWorker):
 
     def default_keyboard(self, lang):
         if lang == "en":
-            return [["/a", "/b", "/c", "/d", "/e", "/f", "/g", "/h", "/i"],
-                    ["/j", "/k", "/l", "/m", "/n", "/o", "/p", "/q", "/r"],
-                    ["/s", "/t", "/u", "/v", "/w", "/x", "/y", "/z"],["/Next", "/Stop"]]
+            return self.tAPI.telegram.get_reply_keyboard(
+                """a\tb\tc\td\te\tf\tg\th\ti\nj\tk\tl\tm\tn\to\tp\tq\tr\ns\tt\tu\tv\tw\tx\ty\tz\nNext\tStop""")
         elif lang == "ru":
-            return [["/а", "/б", "/в", "/г", "/д", "/е", "/ё", "/ж", "/з", "/и", "/й"],
-                    ["/к", "/л", "/м", "/н", "/о", "/п", "/р", "/с", "/т", "/у", "/ф"],
-                    ["/х", "/ц", "/ч", "/ш", "/щ", "/ъ", "/ы", "/ь", "/э", "/ю", "/я"], ["/Next", "/Stop"]]
+            return self.tAPI.telegram.get_reply_keyboard(
+                """а\tб\tв\tг\tд\tе\tж\tз\tи\tй\nк\tл\tм\tн\tо\tп\tр\tс\tт\tу\tф\nх\tц\tч\tш\tщ\tъ\tы\tь\tю\tя\nNext\tStop""")
+            # return [["/а", "/б", "/в", "/г", "/д", "/е", "/ё", "/ж", "/з", "/и", "/й"],
+            #         ["/к", "/л", "/м", "/н", "/о", "/п", "/р", "/с", "/т", "/у", "/ф"],
+            #         ["/х", "/ц", "/ч", "/ш", "/щ", "/ъ", "/ы", "/ь", "/э", "/ю", "/я"], ["/Next", "/Stop"]]
         else:
             return [["No keyboard for this language!"], ["/Next", "/Stop"]]
