@@ -15,7 +15,7 @@ class API:
         self.db = None
         self.offset = 0
 
-        self.admin_ids = set()
+        self.admin_ids = list()
         self.BOT_NICK = ""
         self.DB_IS_ENABLED = False
         self.NO_CARDS_GROUPS = True
@@ -33,7 +33,7 @@ class API:
 
     def get_from_config(self, cfg):
         self.DB_IS_ENABLED = cfg['mongo_settings']['isEnabled'] == 'True'
-        self.admin_ids = cfg['admins_ids']
+        self.admin_ids = list(cfg['admins_ids'])
         self.NO_CARDS_GROUPS = cfg["cards_is_allowed_for_groups"] == 'False'
         self.COOLDOWN_M = int(cfg["card_cooldown_at_minutes"])
 
@@ -61,6 +61,9 @@ class API:
 
     def send(self, message, chat_id, reply_to_message_id=0, keyboard=None):
         return self.telegram.send(message, chat_id, reply_to_message_id)
+
+    def edit(self, message, chat_id, inline_keyboard, message_id):
+        return self.telegram.edit(message, chat_id, inline_keyboard, message_id)
 
     def translate(self, request, lang, userl="en"):
         return self.translator.translate(request, lang, userl)
@@ -108,7 +111,7 @@ class Tg_api:
 
             new_msgs = json.loads(req.text)
             if new_msgs['ok'] and (len(new_msgs['result']) != 0):
-                return json.loads(req.text)
+                return new_msgs
         except requests.exceptions.Timeout:
             print("Timeout in get()!")
         except Exception as ex:
@@ -174,14 +177,15 @@ class Tg_api:
                 timeout=30
             )
         except requests.exceptions.Timeout:
-            print("Timeout in send()!")
+            print("Timeout in send_reply_keyboard(...)!")
         except Exception as ex:
-            print("Error in send()!")
+            print("Error in send_reply_keyboard(...)!")
             print(type(ex), ex.__str__())
         return message
 
-    def get_inline_keyboard(self, source):
-        return list([(["/{}".format(c) for c in s_in.split('\t')] for s_in in source.split('\n'))])  # not ready
+    def get_inline_text_keyboard(self, source):
+        return list([[{'text': c,
+                       'callback_data': "/{}".format(c)} for c in s_in.split('\t')] for s_in in source.split('\n')])
 
     def send_inline_keyboard(self, message, chat_id, inline_keyboard, reply_to_message_id=0):
         method = 'sendMessage'
@@ -208,9 +212,39 @@ class Tg_api:
                 timeout=30
             )
         except requests.exceptions.Timeout:
-            print("Timeout in send()!")
+            print("Timeout in send_inline_keyboard(...)!")
         except Exception as ex:
-            print("Error in send()!")
+            print("Error in send_inline_keyboard(...)!")
+            print(type(ex), ex.__str__())
+        return message
+
+    def edit(self, message, chat_id, inline_keyboard, message_id):
+        method = 'editMessageText'
+        params = {
+            'chat_id': chat_id,
+            'message_id': message_id,
+            'disable_web_page_preview': True,
+            'text': message
+        }
+        if inline_keyboard != None:
+            params["reply_markup"] = json.dumps({
+                "inline_keyboard": inline_keyboard
+            })
+        try:
+            req = requests.request(
+                'POST',
+                '{link}{api_key}/{method}'.format(
+                    link=self.CHAT_LINK,
+                    api_key=self.API_KEY,
+                    method=method
+                ),
+                params=params,
+                timeout=30
+            )
+        except requests.exceptions.Timeout:
+            print("Timeout in edit(...)!")
+        except Exception as ex:
+            print("Error in edit(...)!")
             print(type(ex), ex.__str__())
         return message
 

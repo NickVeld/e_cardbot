@@ -38,7 +38,6 @@ class BaseWorker(object, metaclass=WorkersList):
     __not_bot__ = True
 
     HELP = ""
-    tAPI = None
     
     def __init__(self, teleapi):
         self.tAPI = teleapi
@@ -61,9 +60,8 @@ class Blacklist(BaseWorker):
 
 
 class Stop(BaseWorker):
-
     def is_it_for_me(self, tmsg):
-        return tmsg.text == "/StopPls"
+        return (tmsg.text == "/StopPls") and (str(tmsg.pers_id) == self.tAPI.admin_ids[0])
 
     def run(self, tmsg):
         print(self.tAPI.send("I'll be back, " + tmsg.name + "!", tmsg.chat_id))
@@ -71,8 +69,8 @@ class Stop(BaseWorker):
 
 
 class Translator(BaseWorker):
-    HELP = ("/tr слово - переводит слово с английского на русский или с русского на английский.\n"
-            "Реализовано с помощью сервиса «Яндекс.Словарь», https://tech.yandex.ru/dictionary/\n\n")
+    HELP = "/tr слово - переводит слово с английского на русский или с русского на английский.\n"\
+            "Реализовано с помощью сервиса «Яндекс.Словарь», https://tech.yandex.ru/dictionary/\n\n"
 
     waitlist = set()
 
@@ -146,9 +144,9 @@ class Info(BaseWorker):
 
 class PhraseTranslator(BaseWorker):
 
-    HELP = ("/ph** текст - перевод на язык с кодом ** текста до первой точки, если есть, иначе полностью.\n"
-            "Список кодов языков: https://tech.yandex.ru/translate/doc/dg/concepts/langs-docpage/\n"
-            "Переведено «Яндекс.Переводчиком», http://translate.yandex.ru/\n\n")
+    HELP =  "/ph** текст - перевод на язык с кодом ** текста до первой точки, если есть, иначе полностью.\n"\
+            "Список кодов языков: https://tech.yandex.ru/translate/doc/dg/concepts/langs-docpage/\n"\
+            "Переведено «Яндекс.Переводчиком», http://translate.yandex.ru/\n\n"
 
     waitlist = dict()
 
@@ -188,17 +186,18 @@ class PhraseTranslator(BaseWorker):
 
 class SimpleCard(BaseWorker):
 
-    HELP = "Команда \"/cards_simple\" включает режим карточек, которые проверяет, помните ли вы некогда переведенные слова.\n\n"
+    HELP = "Команда \"/cards_simple\" включает режим карточек"\
+            ", которые проверяют, помните ли вы некогда переведенные слова.\n\n"
 
     waitlist = dict()
 
     def is_it_for_me(self, tmsg):
-        if (tmsg.pers_id, tmsg.chat_id) in self.waitlist:
+        if ((tmsg.pers_id, tmsg.chat_id) in self.waitlist) and tmsg.is_inline:
             return True
         if tmsg.text.startswith("/cards_simple"):
             if not self.tAPI.DB_IS_ENABLED:
                 print(self.tAPI.send("Этот режим сейчас недоступен!", tmsg.chat_id, tmsg.id))
-            elif self.tAPI.NO_CARDS_GROUPS and tmsg.chat_id != tmsg.pers_id:
+            elif self.tAPI.NO_CARDS_GROUPS and (tmsg.chat_id != tmsg.pers_id):
                 print(self.tAPI.send("Использование режима в групповом чате отключено!", tmsg.chat_id, tmsg.id))
             elif self.tAPI.db[str(tmsg.pers_id)]['known_words'].count() == 0:
                 print(self.tAPI.send("Вы не переводили слов, поэтому не могу запустить этот режим.", tmsg.chat_id, tmsg.id))
@@ -210,8 +209,8 @@ class SimpleCard(BaseWorker):
         collection = self.tAPI.db[str(tmsg.pers_id)]['known_words']
         if (tmsg.pers_id, tmsg.chat_id) in self.waitlist:
             if tmsg.text == "/Stop":
-                self.tAPI.send("Я вышел из режима \"simple cards\".",
-                            tmsg.chat_id, tmsg.id)
+                self.tAPI.edit("Я вышел из режима \"simple cards\".",
+                            tmsg.chat_id, None, tmsg.id)
                 if (tmsg.pers_id, tmsg.chat_id) in self.waitlist:
                     self.waitlist.pop((tmsg.pers_id, tmsg.chat_id))
                 return 0
@@ -245,22 +244,29 @@ class SimpleCard(BaseWorker):
              {"$lt": datetime.datetime.utcnow() - datetime.timedelta(minutes=self.tAPI.COOLDOWN_M)}
         })
         if post == None:
+            draft = "Мне не о чем вас спросить сейчас, попробуйте включить этот режим через несколько("\
+                           + str(self.tAPI.COOLDOWN_M) +") минут.\n"\
+                           "Я вышел из режима \"simple cards\"."
             if (tmsg.pers_id, tmsg.chat_id) in self.waitlist:
                 self.waitlist.pop((tmsg.pers_id, tmsg.chat_id))
-            self.tAPI.send("Мне не о чем вас спросить сейчас, попробуйте включить этот режим через несколько("
-                           + str(self.tAPI.COOLDOWN_M) +") минут.\n"
-                           "Я вышел из режима \"simple cards\".",
-                            tmsg.chat_id, tmsg.id)
+                self.tAPI.edit(draft, tmsg.chat_id, None, tmsg.id)
+            else:
+                self.tAPI.send(draft, tmsg.chat_id, tmsg.id)
         else:
-            print(self.tAPI.telegram.send_reply_keyboard("Помните ли вы слово \"" + post['word'] + "\"?",
-                                 tmsg.chat_id, [["/Yes"], ["/No"], ["/Stop"]], tmsg.id))
+            if tmsg.is_inline:
+                print(self.tAPI.edit("Помните ли вы слово \"" + post['word'] + "\"?",
+                                 tmsg.chat_id, self.tAPI.telegram.get_inline_text_keyboard("Yes\nNo\nStop"), tmsg.id))
+            else:
+                print(self.tAPI.telegram.send_inline_keyboard("Помните ли вы слово \"" + post['word'] + "\"?",
+                                 tmsg.chat_id, self.tAPI.telegram.get_inline_text_keyboard("Yes\nNo\nStop"), tmsg.id))
             self.waitlist[(tmsg.pers_id, tmsg.chat_id)] = post["_id"]
         return 0
 
 
 class TranslationCard(BaseWorker):
 
-    HELP = "Команда \"/cards_ytr\" включает режим карточек, которые проверяет, помните ли вы написание некогда переведенных слов по их переводу.\n\n"
+    HELP = "Команда \"/cards_ytr\" включает режим карточек"\
+            ", которые проверяют, помните ли вы написание некогда переведенных слов по их переводу.\n\n"
 
     waitlist = dict()
 
@@ -328,12 +334,13 @@ class TranslationCard(BaseWorker):
 
 class OptionCard(BaseWorker):
 
-    HELP = "Команда \"/cards_4option\" включает режим карточек, которые проверяет, помните ли вы некогда переведенные слова.\n\n"
+    HELP = "Команда \"/cards_4option\" включает режим карточек"\
+           ", которые проверяют, помните ли вы некогда переведенные слова.\n\n"
 
     waitlist = dict()
 
     def is_it_for_me(self, tmsg):
-        if (tmsg.pers_id, tmsg.chat_id) in self.waitlist:
+        if ((tmsg.pers_id, tmsg.chat_id) in self.waitlist) and tmsg.is_inline:
             return True
         if tmsg.text.startswith("/cards_4option"):
             if not self.tAPI.DB_IS_ENABLED:
@@ -350,14 +357,14 @@ class OptionCard(BaseWorker):
     def run(self, tmsg):
         collection = self.tAPI.db[str(tmsg.pers_id)]['known_words']
         if (tmsg.pers_id, tmsg.chat_id) in self.waitlist:
-            if tmsg.text == "/Stop":
-                self.tAPI.send("Я вышел из режима \"4option cards\".",
-                               tmsg.chat_id, tmsg.id)
+            if tmsg.text == "/Stop it":
+                self.tAPI.edit("Я вышел из режима \"4option cards\".",
+                               tmsg.chat_id, None, tmsg.id)
                 if (tmsg.pers_id, tmsg.chat_id) in self.waitlist:
                     self.waitlist.pop((tmsg.pers_id, tmsg.chat_id))
                 return 0
             else:
-                if tmsg.text != "/Next":
+                if tmsg.text != "/Next word":
                     tmsg.text_change_to(tmsg.text[2:])
                     post = collection.find_one({"_id": self.waitlist[(tmsg.pers_id, tmsg.chat_id)][0]})
                     flag = tmsg.text == post['word']
@@ -373,7 +380,8 @@ class OptionCard(BaseWorker):
                         }
                     )
                 else:
-                    self.tAPI.telegram.send_reply_keyboard("Попробуйте еще раз.", tmsg.chat_id,
+                    print(tmsg.msg)
+                    self.tAPI.telegram.edit("Попробуйте еще раз.\n" + tmsg.text_of_inline_root, tmsg.chat_id,
                                    self.waitlist[(tmsg.pers_id, tmsg.chat_id)][1], tmsg.id)
                     return 0
         post = collection.find_one(
@@ -383,27 +391,34 @@ class OptionCard(BaseWorker):
         if post == None:
             if (tmsg.pers_id, tmsg.chat_id) in self.waitlist:
                 self.waitlist.pop((tmsg.pers_id, tmsg.chat_id))
-            self.tAPI.send("Мне не о чем вас спросить сейчас, попробуйте включить этот режим через несколько("
+            self.tAPI.edit("Мне не о чем вас спросить сейчас, попробуйте включить этот режим через несколько("
                            + str(self.tAPI.COOLDOWN_M) + ") минут.\n"
                                                          "Я вышел из режима \"4option cards\".",
-                           tmsg.chat_id, tmsg.id)
+                           tmsg.chat_id, None, tmsg.id)
         else:
-            current_keyboard = []
-            chosen = collection.find()
+            current_keyboard = self.tAPI.telegram.get_inline_text_keyboard("Next word\tStop it")
+            chosen = collection.find({'lang': post['lang']})
             for doc in chosen:
-                if doc['word'] != post['word'] and doc['lang'] == post['lang']:
-                    current_keyboard.insert(random.randint(0, len(current_keyboard)), ["/*" + doc['word']])
-                    if len(current_keyboard) == 3:
+                if doc['word'] != post['word']:  # and doc['lang'] == post['lang']:
+                    current_keyboard.insert(random.randint(0, len(current_keyboard)-1)
+                                            , [{'text': doc['word'], 'callback_data': "/*" + doc['word']}])
+                    if len(current_keyboard) == 4:
                         break
-            if len(current_keyboard) < 3:
-                print(self.tAPI.send("Вы не перевели еще 4 слов на одном языке, поэтому не могу запустить этот режим.",
-                                     tmsg.chat_id, tmsg.id))
+            if len(current_keyboard) < 4:
+                if (tmsg.pers_id, tmsg.chat_id) in self.waitlist:
+                    self.waitlist.pop((tmsg.pers_id, tmsg.chat_id))
+                print(self.tAPI.edit("Вы не перевели еще 4 слов на"
+                                     + (" английском " if post['lang'] == "en" else " русском ")
+                                     + "языке, поэтому выхожу из режима.", tmsg.chat_id, None, tmsg.id))
                 return 0
-            current_keyboard.insert(random.randint(0, len(current_keyboard)), ["/>" + post['word']])
-            print(self.tAPI.telegram.send_reply_keyboard(
-                "Выберите из предложенных слов слово, которому соответствует этот перевод:\n\"" +
-                self.tAPI.db.tr.find_one({"word": post['word']})["trl"] + "\"",
-                tmsg.chat_id, current_keyboard, tmsg.id))
+            current_keyboard.insert(random.randint(0, len(current_keyboard)-1)
+                                    , [{'text': post['word'], 'callback_data': "/*" + post['word']}])
+            draft = "Выберите из предложенных слов слово, которому соответствует этот перевод:\n\""\
+                    + self.tAPI.db.tr.find_one({"word": post['word']})["trl"] + "\""
+            if tmsg.is_inline:
+                print(self.tAPI.edit(draft, tmsg.chat_id, current_keyboard, tmsg.id))
+            else:
+                print(self.tAPI.telegram.send_inline_keyboard(draft, tmsg.chat_id, current_keyboard, tmsg.id))
             self.waitlist[(tmsg.pers_id, tmsg.chat_id)] = [post["_id"], current_keyboard]
         return 0
 
@@ -415,7 +430,7 @@ class HangCard(BaseWorker):
     waitlist = dict()
 
     def is_it_for_me(self, tmsg):
-        if (tmsg.pers_id, tmsg.chat_id) in self.waitlist:
+        if ((tmsg.pers_id, tmsg.chat_id) in self.waitlist) and tmsg.is_inline:
             return True
         if tmsg.text.startswith("/cards_hang"):
             if not self.tAPI.DB_IS_ENABLED:
@@ -425,7 +440,7 @@ class HangCard(BaseWorker):
             elif self.tAPI.db[str(tmsg.pers_id)]['known_words'].count() == 0:
                 print(self.tAPI.send("Вы не переводили слов, поэтому не могу запустить этот режим.", tmsg.chat_id, tmsg.id))
             else:
-                self.tAPI.send("/Stop - остановить режим. \n /Next - следующее слово.", tmsg.chat_id, tmsg.id)
+                self.tAPI.send("Stop - остановить режим. \n Next - следующее слово.", tmsg.chat_id, tmsg.id)
                 return True
         return False
 
@@ -433,25 +448,24 @@ class HangCard(BaseWorker):
         collection = self.tAPI.db[str(tmsg.pers_id)]['known_words']
         if (tmsg.pers_id, tmsg.chat_id) in self.waitlist:
             if tmsg.text == "/Stop":
-                self.tAPI.send("Я вышел из режима \"hang cards\".",
-                               tmsg.chat_id, tmsg.id)
+                self.tAPI.send("Я вышел из режима \"hang cards\".", tmsg.chat_id, tmsg.id)
                 if (tmsg.pers_id, tmsg.chat_id) in self.waitlist:
                     self.waitlist.pop((tmsg.pers_id, tmsg.chat_id))
                 return 0
             else:
                 if tmsg.text != "/Next":
-                    if self.existance_del(tmsg.text, self.waitlist[(tmsg.pers_id, tmsg.chat_id)][3]):
+                    if self.existance_del(self.get_inline_request(tmsg), self.waitlist[(tmsg.pers_id, tmsg.chat_id)][3]):
                         index = self.waitlist[(tmsg.pers_id, tmsg.chat_id)][0].find(tmsg.text[1:].lower())
                         if index == -1:
                             self.waitlist[(tmsg.pers_id, tmsg.chat_id)][2] -= 1
-                            self.tAPI.telegram.send_reply_keyboard("Нет такой буквы. \n\n" +
-                                           self.state_to_string(self.waitlist[(tmsg.pers_id, tmsg.chat_id)]),
-                                           tmsg.chat_id, self.waitlist[(tmsg.pers_id, tmsg.chat_id)][3], tmsg.id)
+                            self.tAPI.edit("Нет такой буквы. \n\n" +
+                                           self.state_to_string(self.waitlist[(tmsg.pers_id, tmsg.chat_id)])
+                                                    , tmsg.chat_id, self.waitlist[(tmsg.pers_id, tmsg.chat_id)][3]
+                                                    , tmsg.id)
                             if self.waitlist[(tmsg.pers_id, tmsg.chat_id)][2] == 0:
-                                self.tAPI.send("Вы проиграли. :(\nОтвет: " + self.waitlist[(tmsg.pers_id, tmsg.chat_id)][4],
-                                               tmsg.chat_id, tmsg.id)
-                                self.tAPI.send("/Stop - остановить режим. \n /Next - следующее слово."
-                                               , tmsg.chat_id, tmsg.id)
+                                self.tAPI.edit("Вы проиграли. :(\nОтвет: " + self.waitlist[(tmsg.pers_id, tmsg.chat_id)][4]
+                                               , tmsg.chat_id, None, tmsg.id)
+                                # self.tAPI.send("Stop - остановить режим. \n Next - следующее слово.", tmsg.chat_id)
                             else:
                                 return 0
                         else:
@@ -465,17 +479,17 @@ class HangCard(BaseWorker):
                                     + "-" \
                                     + self.waitlist[(tmsg.pers_id, tmsg.chat_id)][0][index + 1:]
                                 index = self.waitlist[(tmsg.pers_id, tmsg.chat_id)][0].find(tmsg.text[1:].lower())
-                            self.tAPI.telegram.send_reply_keyboard("Есть такая буква. \n\n" +
+                            self.tAPI.edit("Есть такая буква. \n\n" +
                                            self.state_to_string(self.waitlist[(tmsg.pers_id, tmsg.chat_id)]),
                                            tmsg.chat_id, self.waitlist[(tmsg.pers_id, tmsg.chat_id)][3], tmsg.id)
                             if len(self.waitlist[(tmsg.pers_id, tmsg.chat_id)][0]) \
                                 == self.waitlist[(tmsg.pers_id, tmsg.chat_id)][0].count("-"):
-                                self.tAPI.send("Вы выиграли!", tmsg.chat_id, tmsg.id)
-                                self.tAPI.send("/Stop - остановить режим. \n /Next - следующее слово.", tmsg.chat_id, tmsg.id)
+                                self.tAPI.edit("Вы выиграли!", tmsg.chat_id, None, tmsg.id)
+                                # self.tAPI.send("Stop - остановить режим. \n Next - следующее слово.", tmsg.chat_id)
                             else:
                                 return 0
                     else:
-                        self.tAPI.telegram.send_reply_keyboard("Некорректный ответ. Попробуйте еще раз. \n\n" +
+                        self.tAPI.edit("Некорректный ответ. Попробуйте еще раз. \n\n" +
                                    self.state_to_string(self.waitlist[(tmsg.pers_id, tmsg.chat_id)]),
                                    tmsg.chat_id, self.waitlist[(tmsg.pers_id, tmsg.chat_id)][3], tmsg.id)
                         return 0
@@ -486,12 +500,18 @@ class HangCard(BaseWorker):
             self.tAPI.send("Мне не о чем вас спросить.", tmsg.chat_id, tmsg.id)
         else:
             state = [post['word'], "- " * len(post['word']), 6, self.default_keyboard(post['lang']), post['word']]
-            print(self.tAPI.telegram.send_reply_keyboard(self.state_to_string(state), tmsg.chat_id, state[3], tmsg.id))
+            print(self.tAPI.telegram.send_inline_keyboard(self.state_to_string(state), tmsg.chat_id, state[3]))
             self.waitlist[(tmsg.pers_id, tmsg.chat_id)] = state
         return 0
 
     def state_to_string(self, state):
         return state[1] + "\nВаше количество жизней: " + str(state[2]) + "."
+
+    def get_reply_request(self, tmsg):
+        return tmsg.text
+
+    def get_inline_request(self, tmsg):
+        return {'text': tmsg.text[1:], 'callback_data': tmsg.text}
 
     def existance_del(self, request, keyboard):
         for i in range(0, len(keyboard)-1):
@@ -502,13 +522,13 @@ class HangCard(BaseWorker):
 
     def default_keyboard(self, lang):
         if lang == "en":
-            return self.tAPI.telegram.get_reply_keyboard(
+            return self.tAPI.telegram.get_inline_text_keyboard(
                 """a\tb\tc\td\te\tf\tg\th\ti\nj\tk\tl\tm\tn\to\tp\tq\tr\ns\tt\tu\tv\tw\tx\ty\tz\nNext\tStop""")
         elif lang == "ru":
-            return self.tAPI.telegram.get_reply_keyboard(
+            return self.tAPI.telegram.get_inline_text_keyboard(
                 """а\tб\tв\tг\tд\tе\tж\tз\tи\tй\nк\tл\tм\tн\tо\tп\tр\tс\tт\tу\tф\nх\tц\tч\tш\tщ\tъ\tы\tь\tю\tя\nNext\tStop""")
             # return [["/а", "/б", "/в", "/г", "/д", "/е", "/ё", "/ж", "/з", "/и", "/й"],
             #         ["/к", "/л", "/м", "/н", "/о", "/п", "/р", "/с", "/т", "/у", "/ф"],
             #         ["/х", "/ц", "/ч", "/ш", "/щ", "/ъ", "/ы", "/ь", "/э", "/ю", "/я"], ["/Next", "/Stop"]]
         else:
-            return [["No keyboard for this language!"], ["/Next", "/Stop"]]
+            return self.tAPI.telegram.get_inline_text_keyboard("No keyboard for this language!\nNext\tStop")
