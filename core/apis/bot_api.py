@@ -3,6 +3,7 @@
 import random
 import requests
 import json
+import datetime
 from pymongo import MongoClient
 
 __author__ = 'NickVeld'
@@ -20,6 +21,7 @@ class API:
         self.DB_IS_ENABLED = False
         self.NO_CARDS_GROUPS = True
         self.COOLDOWN_M = 1
+        self.TEST_WORDS = False
 
     # def __init__(self, data):
     #     self.telegram = Tg_api(data["api_key"])
@@ -41,6 +43,7 @@ class API:
                    [cfg['mongo_settings']['db_name']] if self.DB_IS_ENABLED else None)
 
         self.BOT_NICK = cfg['APIs']['bot_nick']
+        self.TEST_WORDS = cfg.get('test_words', 'False') == 'True'
 
         self.telegram.get_from_config(cfg['APIs'])
         self.translator.get_from_config(cfg['APIs'])
@@ -76,6 +79,48 @@ class API:
             if request == None else \
             collection.find(request).skip(random.randint(0, collection.count()-1)).limit(1)[0]
         #return collection.find_one() if request==None else collection.find_one(request)
+
+    def get_test_word(self, pers_id):
+        return self.db['common'].find_one(
+            { "$or": [
+                {str(pers_id):
+                     {"$exists": False}
+                 },
+                {str(pers_id):
+                     {"$lt": datetime.datetime.utcnow() - datetime.timedelta(minutes=self.COOLDOWN_M)}
+                 }
+            ]})
+
+    def get_doc_for_card(self, tmsg, collection, additional_condition=(lambda x: True)):
+        post = collection.find_one(
+            {"lastRevised":
+                 {"$lt": datetime.datetime.utcnow() - datetime.timedelta(minutes=self.COOLDOWN_M)}
+             })
+        if post == None or not additional_condition(post["lang"]):
+            if self.TEST_WORDS:
+                post = self.get_test_word(tmsg.pers_id)
+                return [post, None if post == None else [post["_id"], False]]
+        else:
+            return [post, [post["_id"], True]]
+
+    def update_doc_for_card(self, is_not_test_word, pers_id, doc_id):
+        if (is_not_test_word):
+            self.db[str(pers_id)]['known_words'].update_one(
+                {"_id": doc_id},
+                {
+                    "$set": {
+                        "lastRevised": datetime.datetime.utcnow()
+                    }
+                })
+        else:
+            self.db['common'].update_one(
+                {"_id": doc_id},
+                {
+                    "$set": {
+                        str(pers_id): datetime.datetime.utcnow()
+                    }
+                })
+
 
 class Tg_api:
 

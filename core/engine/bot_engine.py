@@ -17,9 +17,9 @@ class BotCycle:
         try:
             for msg in self.tapi.get_msg():
                 tmsg = Msg(msg, self.tapi.BOT_NICK)
+                if (tmsg.msg == None) or tmsg.text.startswith("//"):
+                    continue
                 if tmsg.text != "":
-                    if tmsg.text.startswith("//"):
-                        continue
                     print(tmsg.text)
                     tmsg.textmod()
                     try:
@@ -29,9 +29,10 @@ class BotCycle:
                                 cmd = worker.run(tmsg)
                                 if cmd == 2:
                                     is_running = False
-                                break
+                                if cmd != 1:
+                                    break
                     except UnicodeEncodeError:
-                        print(self.tapi.send("I don't like your language!", tmsg.chat_id))
+                        print(self.tapi.send("Мне не нравится Ваш язык!", tmsg.chat_id))
                 if not is_running:
                     break
         except Exception as ex:

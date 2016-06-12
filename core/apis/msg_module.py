@@ -45,11 +45,16 @@ class Msg():
     def is_inline(self):
         return self.inline_data != None
 
-    def text_change_to(self, new_v):
+    def text_change_to(self, new_value):
         if self.inline_data == None:
-            self.msg['text'] = new_v
+            self.msg['text'] = new_value
         else:
-            self.inline_data = new_v
+            self.inline_data = new_value
+
+    def text_replace(self, template, new_value, func=None):
+        if self.inline_data == None:
+            strk = self.msg['text']
+            self.msg['text'] = func(template, new_value, strk)
 
     def textmod(self):
         if self.inline_data == None:
