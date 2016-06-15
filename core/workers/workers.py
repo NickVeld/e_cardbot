@@ -80,20 +80,21 @@ class Humanity(BaseWorker):
         self.re = re
 
     def is_it_for_me(self, tmsg):
-        return not (tmsg.text.startswith('/') or tmsg.is_inline)
+        return not (tmsg.is_inline)
 
     def run(self, tmsg):
         tmsg.text_change_to(tmsg.text.lower())
-        if self.re.match(r"^команды", tmsg.text):
+        print(tmsg.text)
+        if self.re.match(r"^(((\/| )*)команды)", tmsg.text):
             self.tAPI.send("Список фраз:\n\"переведи слово\", после этого пишите свое слово\n"
                            "\"переведи фразу на английский\", после этого пишите свою фразу"
                            "\"переведи фразу на русский\", после этого пишите свою фразу"
                            "\"давай карточки\", выбирается случайный режим", tmsg.chat_id, tmsg.id)
             return 0
-        tmsg.text_replace(r"^переведи(.*)слово", Translator.COMMAND, self.re.sub)
+        tmsg.text_replace(r"^(((\/| )*)переведи(.*)слово)", Translator.COMMAND, self.re.sub)
         print(tmsg.text)
-        tmsg.text_replace(r"^переведи(.*)на английский", PhraseTranslator.COMMAND + "en", self.re.sub)
-        tmsg.text_replace(r"^переведи(.*)на русский", PhraseTranslator.COMMAND + "ru", self.re.sub)
+        tmsg.text_replace(r"^(((\/| )*)переведи(.*)на английский)", PhraseTranslator.COMMAND + "en", self.re.sub)
+        tmsg.text_replace(r"^(((\/| )*)переведи(.*)на русский)", PhraseTranslator.COMMAND + "ru", self.re.sub)
         choice = random.randint(0, 4)
         if choice == 1:
             choice = TranslationCard.COMMAND
@@ -103,7 +104,7 @@ class Humanity(BaseWorker):
             choice = HangCard.COMMAND
         else:
             choice = SimpleCard.COMMAND
-        tmsg.text_replace(r"^давай карточки", choice, self.re.sub)
+        tmsg.text_replace(r"^(((\/| )*)давай карточки)", choice, self.re.sub)
         return 1
 
 
