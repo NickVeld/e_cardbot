@@ -84,7 +84,6 @@ class Humanity(BaseWorker):
 
     def run(self, tmsg):
         tmsg.text_change_to(tmsg.text.lower())
-        print(tmsg.text)
         if self.re.match(r"^(((\/| )*)команды)", tmsg.text):
             self.tAPI.send("Список фраз:\n\"переведи слово\", после этого пишите свое слово\n"
                            "\"переведи фразу на английский\", после этого пишите свою фразу"
@@ -92,7 +91,6 @@ class Humanity(BaseWorker):
                            "\"давай карточки\", выбирается случайный режим", tmsg.chat_id, tmsg.id)
             return 0
         tmsg.text_replace(r"^(((\/| )*)переведи(.*)слово)", Translator.COMMAND, self.re.sub)
-        print(tmsg.text)
         tmsg.text_replace(r"^(((\/| )*)переведи(.*)на английский)", PhraseTranslator.COMMAND + "en", self.re.sub)
         tmsg.text_replace(r"^(((\/| )*)переведи(.*)на русский)", PhraseTranslator.COMMAND + "ru", self.re.sub)
         choice = random.randint(0, 4)
@@ -111,7 +109,8 @@ class Humanity(BaseWorker):
 class Translator(BaseWorker):
     COMMAND = "/tr"
     HELP = COMMAND + " слово - переводит слово с английского на русский или с русского на английский.\n"\
-            "Реализовано с помощью сервиса «Яндекс.Словарь», https://tech.yandex.ru/dictionary/\n\n"
+            "Реализовано с помощью сервиса «Яндекс.Словарь», https://tech.yandex.ru/dictionary/\n" \
+            "Проверка правописания: Яндекс.Спеллер, http://api.yandex.ru/speller/\n\n"
 
     waitlist = set()
 
@@ -152,7 +151,12 @@ class Translator(BaseWorker):
             elif lang == "":
                 lang = "en"
             if lang != "":
-                print(self.tAPI.send(res, tmsg.chat_id, tmsg.id))
+                with_mistake = res.startswith("*_%")
+                if with_mistake:
+                    res = res[3:]
+
+                print(self.tAPI.send(("Исправлена(-ы) ошибка(-и).\n\n" if with_mistake else "") + res
+                                     , tmsg.chat_id, tmsg.id))
                 if self.tAPI.DB_IS_ENABLED:
                     collection.insert_one({"word": txt, "trl": res})
                     self.tAPI.db[str(tmsg.pers_id)]['known_words'].insert_one(
@@ -189,7 +193,7 @@ class Info(BaseWorker):
 class PhraseTranslator(BaseWorker):
     COMMAND = "/ph"
     HELP =  COMMAND + "** текст - перевод на язык с кодом ** текста до первой точки, если есть, иначе полностью.\n"\
-            "Список кодов языков: https://tech.yandex.ru/translate/doc/dg/concepts/langs-docpage/\n"\
+            "Список кодов языков: https://tech.yandex.ru/translate/doc/dg/concepts/api-overview-docpage/#languages\n"\
             "Переведено «Яндекс.Переводчиком», http://translate.yandex.ru/\n\n"
 
     waitlist = dict()
@@ -206,7 +210,7 @@ class PhraseTranslator(BaseWorker):
                 self.waitlist[(tmsg.pers_id, tmsg.chat_id)] = tmsg.text[3:5]
                 return 1
             else:
-                txt = tmsg.text[5:].lstrip()
+                txt = tmsg.text[5:5005 if len(tmsg.text) > 5005 else len(tmsg.text)].lstrip()
         else:
             txt = tmsg.text.lstrip()
         if txt.startswith("/"):

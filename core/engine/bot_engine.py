@@ -1,9 +1,7 @@
-from core.apis.msg_module import Msg
+from core.services.msg_module import Msg
 
 
 class BotCycle:
-    tapi = None
-    workers_list = None
 
     def __init__(self, tapi, workers_list):
         self.tapi = tapi

@@ -1,6 +1,5 @@
 from configobj import ConfigObj
 
-isExample = True
 config = ConfigObj()
 config.filename = "config_example.cfg"
 config['APIs'] = {
@@ -8,6 +7,7 @@ config['APIs'] = {
     'telegram_chatlink': 'https://api.telegram.org/bot',
     'dictionary_link': 'https://dictionary.yandex.net/api/v1/dicservice.json/lookup?',
     'translator_link': 'https://translate.yandex.net/api/v1.5/tr.json/translate?',
+    'speller_link': "http://speller.yandex.net/services/spellservice.json/checkText?",
     'telegram_api': "000000000:api_key",
     'dictionary_api': "dict.1.1.dict.key",
     'translator_api': "trnsl.1.1.tr.key"
@@ -25,6 +25,7 @@ config['admins_ids'] = [
 config['included_workers'] = [
     "Blacklist",
     "Stop",
+    "Humanity",
     "Translator",
     "PhraseTranslator",
     "Info",
@@ -35,6 +36,7 @@ config['included_workers'] = [
 ]
 config["cards_is_allowed_for_groups"] = True
 config["card_cooldown_at_minutes"] = 1
+config["test_words"] = True
 config.initial_comment = ["Change values which you want, rename file to \"config.cfg\" and delete this string!"]
 config.final_comment = ["Warning: Allowing cards for groups cause an undefined behavior "
                         "because of inline keyboards disallowed at groups."]

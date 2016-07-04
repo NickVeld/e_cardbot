@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
 
-import random
 import requests
 import json
-import datetime
-from pymongo import MongoClient
+from core.services.doc_service import DBShell
 
 __author__ = 'NickVeld'
 
@@ -13,15 +11,13 @@ class API:
     def __init__(self):
         self.telegram = Tg_api()
         self.translator = Translator()
-        self.db = None
+        self.db_shell = DBShell()
         self.offset = 0
 
         self.admin_ids = list()
         self.BOT_NICK = ""
         self.DB_IS_ENABLED = False
         self.NO_CARDS_GROUPS = True
-        self.COOLDOWN_M = 1
-        self.TEST_WORDS = False
 
     # def __init__(self, data):
     #     self.telegram = Tg_api(data["api_key"])
@@ -30,23 +26,18 @@ class API:
     #     self.admin_ids = data["admin_ids"]
     #     self.DB_IS_ENABLED = data["db_is_enabled"]
     #     self.NO_CARDS_GROUPS = not data["cards_groups"]
-    #     self.COOLDOWN_M = int(data["cooldown_m"])
     #     self.db = MongoClient(data["mongo_name"], data["mongo_port"])["e_card"] if self.DB_IS_ENABLED else None
 
     def get_from_config(self, cfg):
         self.DB_IS_ENABLED = cfg['mongo_settings']['isEnabled'] == 'True'
         self.admin_ids = list(cfg['admins_ids'])
         self.NO_CARDS_GROUPS = cfg["cards_is_allowed_for_groups"] == 'False'
-        self.COOLDOWN_M = int(cfg["card_cooldown_at_minutes"])
-
-        self.db = (MongoClient(cfg['mongo_settings']['name'], int(cfg['mongo_settings']['port']))
-                   [cfg['mongo_settings']['db_name']] if self.DB_IS_ENABLED else None)
 
         self.BOT_NICK = cfg['APIs']['bot_nick']
-        self.TEST_WORDS = cfg.get('test_words', 'False') == 'True'
 
         self.telegram.get_from_config(cfg['APIs'])
         self.translator.get_from_config(cfg['APIs'])
+        self.db_shell.get_from_config(cfg)
 
     def get(self, toffset=0):
         return self.telegram.get(toffset)
@@ -59,7 +50,6 @@ class API:
 
             for msg in new_msgs['result']:
                 self.offset = msg['update_id']
-                print(self.offset)
                 yield msg
 
     def send(self, message, chat_id, reply_to_message_id=0, keyboard=None):
@@ -75,51 +65,16 @@ class API:
         return self.translator.translateph(request, lang, userl)
 
     def get_random_doc(self, collection, request=None):
-        return collection.find().skip(random.randint(0, collection.count()-1)).limit(1)[0] \
-            if request == None else \
-            collection.find(request).skip(random.randint(0, collection.count()-1)).limit(1)[0]
-        #return collection.find_one() if request==None else collection.find_one(request)
+        return self.db_shell.get_random_doc(collection, request)
 
     def get_test_word(self, pers_id):
-        return self.db['common'].find_one(
-            { "$or": [
-                {str(pers_id):
-                     {"$exists": False}
-                 },
-                {str(pers_id):
-                     {"$lt": datetime.datetime.utcnow() - datetime.timedelta(minutes=self.COOLDOWN_M)}
-                 }
-            ]})
+        return self.db_shell.get_test_word(pers_id)
 
     def get_doc_for_card(self, tmsg, collection, additional_condition=(lambda x: True)):
-        post = collection.find_one(
-            {"lastRevised":
-                 {"$lt": datetime.datetime.utcnow() - datetime.timedelta(minutes=self.COOLDOWN_M)}
-             })
-        if post == None or not additional_condition(post["lang"]):
-            if self.TEST_WORDS:
-                post = self.get_test_word(tmsg.pers_id)
-                return [post, None if post == None else [post["_id"], False]]
-        else:
-            return [post, [post["_id"], True]]
+        return self.db_shell.get_doc_for_card(tmsg, collection, additional_condition)
 
     def update_doc_for_card(self, is_not_test_word, pers_id, doc_id):
-        if (is_not_test_word):
-            self.db[str(pers_id)]['known_words'].update_one(
-                {"_id": doc_id},
-                {
-                    "$set": {
-                        "lastRevised": datetime.datetime.utcnow()
-                    }
-                })
-        else:
-            self.db['common'].update_one(
-                {"_id": doc_id},
-                {
-                    "$set": {
-                        str(pers_id): datetime.datetime.utcnow()
-                    }
-                })
+        self.db_shell.update_doc_for_card(is_not_test_word, pers_id, doc_id)
 
 
 class Tg_api:
@@ -299,6 +254,7 @@ class Translator:
         self.TR_KEY = ""
         self.DICT_LINK = ""
         self.TR_LINK = ""
+        self.SPLR_LINK = ""
 
     # def __init__(self, dict_key, tr_key):
     #     self.DICT_KEY = dict_key
@@ -309,8 +265,25 @@ class Translator:
         self.TR_KEY = cfg['translator_api']
         self.DICT_LINK = cfg['dictionary_link']
         self.TR_LINK = cfg['translator_link']
+        self.SPLR_LINK = cfg['speller_link']
 
     def translate(self, request, lang, userl="en"):
+        if len(request) > 100:
+            request = request[:100]
+        req = requests.get(
+            "{link}&text={request}&lang={lang})".format(
+                link=self.SPLR_LINK,
+                lang=lang,
+                request=request
+            )
+        ).json()
+
+        with_mistakes = False
+        for mistake in req:
+            if mistake['code'] == 1 and len(mistake['s']) > 0:
+                with_mistakes = True
+                request = request.replace(mistake['word'], mistake['s'][0], 1)
+        print(request)
         req = requests.get(
             "{link}key={dict_key}&lang={lang}&text={request})".format(
                 link=self.DICT_LINK,
@@ -323,6 +296,8 @@ class Translator:
         ).json()
 
         res = ""
+        if with_mistakes:
+            res += "*_%"
         if len(req['def']) > 0:
             nstr = 1  # number of string
             for wdef in req['def']:
@@ -335,6 +310,7 @@ class Translator:
                         res = res[:-2]
                         res += '\n'
             res = res[:-1]
+        print(res)
         return res
 
     def translateph(self, request, lang, userl="en"):
