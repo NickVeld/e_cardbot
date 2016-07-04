@@ -283,7 +283,6 @@ class Translator:
             if mistake['code'] == 1 and len(mistake['s']) > 0:
                 with_mistakes = True
                 request = request.replace(mistake['word'], mistake['s'][0], 1)
-        print(request)
         req = requests.get(
             "{link}key={dict_key}&lang={lang}&text={request})".format(
                 link=self.DICT_LINK,
@@ -296,8 +295,6 @@ class Translator:
         ).json()
 
         res = ""
-        if with_mistakes:
-            res += "*_%"
         if len(req['def']) > 0:
             nstr = 1  # number of string
             for wdef in req['def']:
@@ -310,7 +307,8 @@ class Translator:
                         res = res[:-2]
                         res += '\n'
             res = res[:-1]
-        print(res)
+        if with_mistakes:
+            res = "*_%" + request + "\n\n" + res
         return res
 
     def translateph(self, request, lang, userl="en"):

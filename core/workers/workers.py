@@ -155,8 +155,8 @@ class Translator(BaseWorker):
                 if with_mistake:
                     res = res[3:]
 
-                print(self.tAPI.send(("Исправлена(-ы) ошибка(-и).\n\n" if with_mistake else "") + res
-                                     , tmsg.chat_id, tmsg.id))
+                print(self.tAPI.send(("Исправлена(-ы) ошибка(-и).\nВозможно, Вы имели ввиду:"
+                                      if with_mistake else "") + res, tmsg.chat_id, tmsg.id))
                 if self.tAPI.DB_IS_ENABLED:
                     collection.insert_one({"word": txt, "trl": res})
                     self.tAPI.db[str(tmsg.pers_id)]['known_words'].insert_one(
