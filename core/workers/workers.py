@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import datetime
 import random
 import sys
 
@@ -155,17 +154,10 @@ class Translator(BaseWorker):
                 if with_mistake:
                     res = res[3:]
 
-                print(self.tAPI.send(("Исправлена(-ы) ошибка(-и).\nВозможно, Вы имели ввиду:"
+                print(self.tAPI.send(("Возможно, Вы имели ввиду: "
                                       if with_mistake else "") + res, tmsg.chat_id, tmsg.id))
                 if self.tAPI.DB_IS_ENABLED:
-                    collection.insert_one({"word": txt, "trl": res})
-                    self.tAPI.db[str(tmsg.pers_id)]['known_words'].insert_one(
-                        {
-                            "word": txt,
-                            "lang": lang,
-                            "lastRevised": datetime.datetime.utcnow()
-                        }
-                    )
+                    self.tAPI.insert_doc_for_card(tmsg, collection, txt, lang, res)
         else:
             print(self.tAPI.send("l " + post["trl"], tmsg.chat_id, tmsg.id))
 
@@ -272,10 +264,10 @@ class SimpleCard(BaseWorker):
                 history = self.waitlist[(tmsg.pers_id, tmsg.chat_id)][2] + post["word"] + ':\n' + post["trl"] + '\n\n'
                 # self.tAPI.send(post["trl"], tmsg.chat_id, tmsg.id)
                 self.tAPI.update_doc_for_card(self.waitlist[(tmsg.pers_id, tmsg.chat_id)][1]
-                                              , tmsg.pers_id, self.waitlist[(tmsg.pers_id, tmsg.chat_id)][0])
+                                              , tmsg.pers_id, self.waitlist[(tmsg.pers_id, tmsg.chat_id)][0], False)
             elif tmsg.text == "/Yes":
                 self.tAPI.update_doc_for_card(self.waitlist[(tmsg.pers_id, tmsg.chat_id)][1]
-                                              , tmsg.pers_id, self.waitlist[(tmsg.pers_id, tmsg.chat_id)][0])
+                                              , tmsg.pers_id, self.waitlist[(tmsg.pers_id, tmsg.chat_id)][0], True)
             else:
                 self.tAPI.send("Неожиданный ответ! Попробуйте еще раз.",
                                tmsg.chat_id, tmsg.id)
@@ -346,7 +338,7 @@ class TranslationCard(BaseWorker):
                     flag = True
                 if flag:
                     self.tAPI.update_doc_for_card(self.waitlist[(tmsg.pers_id, tmsg.chat_id)][1]
-                                                  , tmsg.pers_id, self.waitlist[(tmsg.pers_id, tmsg.chat_id)][0])
+                                                  , tmsg.pers_id, self.waitlist[(tmsg.pers_id, tmsg.chat_id)][0], True)
                 else:
                     self.tAPI.send("Попробуйте еще раз.", tmsg.chat_id, tmsg.id)
                     return 0
@@ -410,7 +402,7 @@ class OptionCard(BaseWorker):
                     flag = True
                 if flag:
                     self.tAPI.update_doc_for_card(self.waitlist[(tmsg.pers_id, tmsg.chat_id)][1]
-                                                  , tmsg.pers_id, self.waitlist[(tmsg.pers_id, tmsg.chat_id)][0])
+                                                  , tmsg.pers_id, self.waitlist[(tmsg.pers_id, tmsg.chat_id)][0], True)
                 else:
                     print(tmsg.msg)
                     self.tAPI.telegram.edit("Попробуйте еще раз.\n" + tmsg.text_of_inline_root, tmsg.chat_id,

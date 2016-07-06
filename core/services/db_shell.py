@@ -1,5 +1,6 @@
 import datetime
 import random
+from bson.code import Code
 from pymongo import MongoClient
 
 __author__ = 'NickVeld'
@@ -37,10 +38,16 @@ class DBShell:
             ]})
 
     def get_doc_for_card(self, tmsg, collection, additional_condition=(lambda x: True)):
-        post = collection.find_one(
-            {"lastRevised":
-                 {"$lt": datetime.datetime.utcnow() - datetime.timedelta(minutes=self.COOLDOWN_M)}
-             })
+        cursor = collection.find({}).limit(1).where(Code("function() {"
+            "var d = new Date(); "
+            "d.setMinutes(d.getMinutes()-" + str(self.COOLDOWN_M) + "*Math.pow(2, this.deck)); "
+            "return d.getTime() - this.lastRevised.getTime() > 0;"
+            "}")
+            )
+        if cursor.count() > 0:
+            post = cursor[0]
+        else:
+            post = None
         if post == None or not additional_condition(post["lang"]):
             if self.TEST_WORDS:
                 post = self.get_test_word(tmsg.pers_id)
@@ -48,15 +55,16 @@ class DBShell:
         else:
             return [post, [post["_id"], True]]
 
-    def update_doc_for_card(self, is_not_test_word, pers_id, doc_id):
+    def update_doc_for_card(self, is_not_test_word, pers_id, doc_id, correctness):
         if (is_not_test_word):
+            if (correctness):
+                info = { "$inc": { "deck": 1 }, "$set": {} }
+            else:
+                info = { "$set": { "deck": 0 } }
+            info["$set"]["lastRevised"] = datetime.datetime.utcnow()
+
             self.db[str(pers_id)]['known_words'].update_one(
-                {"_id": doc_id},
-                {
-                    "$set": {
-                        "lastRevised": datetime.datetime.utcnow()
-                    }
-                })
+                {"_id": doc_id}, info)
         else:
             self.db['common'].update_one(
                 {"_id": doc_id},
@@ -65,3 +73,14 @@ class DBShell:
                         str(pers_id): datetime.datetime.utcnow()
                     }
                 })
+
+    def insert_doc_for_card(self, tmsg, collection, tr_request, lang, tr_response):
+        collection.insert_one({"word": tr_request, "trl": tr_response})
+        self.db[str(tmsg.pers_id)]['known_words'].insert_one(
+            {
+                "word": tr_request,
+                "lang": lang,
+                "lastRevised": datetime.datetime.utcnow(),
+                "deck": 1
+            }
+        )

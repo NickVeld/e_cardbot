@@ -2,7 +2,7 @@
 
 import requests
 import json
-from core.services.doc_service import DBShell
+from core.services.db_shell import DBShell
 
 __author__ = 'NickVeld'
 
@@ -30,6 +30,7 @@ class API:
 
     def get_from_config(self, cfg):
         self.DB_IS_ENABLED = cfg['mongo_settings']['isEnabled'] == 'True'
+        print("DB is " + ("en" if self.DB_IS_ENABLED else "dis") + "abled")
         self.admin_ids = list(cfg['admins_ids'])
         self.NO_CARDS_GROUPS = cfg["cards_is_allowed_for_groups"] == 'False'
 
@@ -64,6 +65,14 @@ class API:
     def translateph(self, request, lang, userl="en"):
         return self.translator.translateph(request, lang, userl)
 
+    @property
+    def db(self):
+        return self.db_shell.db
+
+    @property
+    def COOLDOWN_M(self):
+        return self.db_shell.COOLDOWN_M
+
     def get_random_doc(self, collection, request=None):
         return self.db_shell.get_random_doc(collection, request)
 
@@ -73,8 +82,11 @@ class API:
     def get_doc_for_card(self, tmsg, collection, additional_condition=(lambda x: True)):
         return self.db_shell.get_doc_for_card(tmsg, collection, additional_condition)
 
-    def update_doc_for_card(self, is_not_test_word, pers_id, doc_id):
-        self.db_shell.update_doc_for_card(is_not_test_word, pers_id, doc_id)
+    def update_doc_for_card(self, is_not_test_word, pers_id, doc_id, correctness):
+        self.db_shell.update_doc_for_card(is_not_test_word, pers_id, doc_id, correctness)
+
+    def insert_doc_for_card(self, tmsg, collection, tr_request, lang, tr_response):
+        self.db_shell.insert_doc_for_card(tmsg, collection, tr_request, lang, tr_response)
 
 
 class Tg_api:
