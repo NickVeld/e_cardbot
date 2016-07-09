@@ -107,20 +107,20 @@ class Humanity(BaseWorker):
 
 class Translator(BaseWorker):
     COMMAND = "/tr"
-    HELP = COMMAND + " слово - переводит слово с английского на русский или с русского на английский.\n"\
+    HELP = COMMAND + " слово - бот переводит слово с английского на русский или с русского на английский и"\
+            "добавляет карточку с этим словом в Ваш набор.\n"\
             "Реализовано с помощью сервиса «Яндекс.Словарь», https://tech.yandex.ru/dictionary/\n" \
             "Проверка правописания: Яндекс.Спеллер, http://api.yandex.ru/speller/\n\n"
 
     waitlist = set()
 
     def is_it_for_me(self, tmsg):
-        return tmsg.text.startswith(self.COMMAND) or ((tmsg.pers_id, tmsg.chat_id) in self.waitlist or
-                                               ((tmsg.pers_id == tmsg.chat_id) and not tmsg.text.startswith("/")))
+        return tmsg.text.startswith(self.COMMAND) or (not tmsg.is_inline and (((tmsg.pers_id, tmsg.chat_id) in self.waitlist or
+                                               ((tmsg.pers_id == tmsg.chat_id) and not tmsg.text.startswith("/")))))
 
     def run(self, tmsg):
         is_chain = (tmsg.pers_id, tmsg.chat_id) in self.waitlist
         txt = ""
-        tmsg.text_change_to(tmsg.text.lower())
         if not (is_chain or
                 ((tmsg.pers_id == tmsg.chat_id) and not tmsg.text.startswith("/"))):
             if len(tmsg.text) < 4:
@@ -128,12 +128,11 @@ class Translator(BaseWorker):
                 self.waitlist.add((tmsg.pers_id, tmsg.chat_id))
                 return 1
             else:
-                txt = tmsg.text[3:].lstrip()
+                txt = tmsg.text[3:].lstrip().lower()
         else:
-            txt = tmsg.text.lstrip()
+            txt = tmsg.text.lstrip().lower()
         if txt.startswith('/'):
             txt = txt[1:]
-        # res = ""
         post = None
         if self.tAPI.DB_IS_ENABLED:
             collection = self.tAPI.db.tr
@@ -328,12 +327,11 @@ class TranslationCard(BaseWorker):
                 return 0
             else:
                 if tmsg.text != "/Next":
-                    tmsg.text_change_to(tmsg.text[2:].lower())
                     post = (collection if self.waitlist[(tmsg.pers_id, tmsg.chat_id)][1]
                             else self.tAPI.db['common']).find_one(
                         {"_id": self.waitlist[(tmsg.pers_id, tmsg.chat_id)][0]}
                     )
-                    flag = tmsg.text == post['word']
+                    flag = tmsg.text[2:].lower() == post['word']
                 else:
                     flag = True
                 if flag:
@@ -392,12 +390,11 @@ class OptionCard(BaseWorker):
                 return 0
             else:
                 if tmsg.text != "/Next word":
-                    tmsg.text_change_to(tmsg.text[2:])
                     post = (collection if self.waitlist[(tmsg.pers_id, tmsg.chat_id)][1]
                             else self.tAPI.db['common']).find_one(
                         {"_id": self.waitlist[(tmsg.pers_id, tmsg.chat_id)][0]}
                     )
-                    flag = tmsg.text == post['word']
+                    flag = tmsg.text[2:].lower() == post['word']
                 else:
                     flag = True
                 if flag:
