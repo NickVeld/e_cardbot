@@ -102,7 +102,7 @@ class Humanity(BaseWorker):
             choice = HangCard.COMMAND
         else:
             choice = SimpleCard.COMMAND
-        tmsg.text_replace(r"^(((\/| )*)давай карточки)", choice, self.re.sub)
+        tmsg.text_replace(r"^(((\/| )*)давай(.*)карточки)", choice, self.re.sub)
         return 1
 
 
