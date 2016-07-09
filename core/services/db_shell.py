@@ -10,6 +10,7 @@ class DBShell:
     def __init__(self):
         self.db = None
         self.COOLDOWN_M = 1
+        # self.NUM_DECKS = 5
         self.TEST_WORDS = False
 
 
@@ -17,6 +18,7 @@ class DBShell:
         self.db = (MongoClient(cfg['mongo_settings']['name'], int(cfg['mongo_settings']['port']))
                    [cfg['mongo_settings']['db_name']] if cfg['mongo_settings']['isEnabled'] == 'True' else None)
         self.COOLDOWN_M = int(cfg["card_cooldown_at_minutes"])
+        # self.NUM_DECKS = int(cfg["number_of_decks"]) - 1
         self.TEST_WORDS = cfg.get('test_words', 'False') == 'True'
 
 
@@ -38,12 +40,12 @@ class DBShell:
             ]})
 
     def get_doc_for_card(self, tmsg, collection, additional_condition=(lambda x: True)):
-        cursor = collection.find({}).limit(1).where(Code("function() {"
+        cursor = collection.find({}).where(Code("function() {"
             "var d = new Date(); "
             "d.setMinutes(d.getMinutes()-" + str(self.COOLDOWN_M) + "*Math.pow(2, this.deck)); "
             "return d.getTime() - this.lastRevised.getTime() > 0;"
             "}")
-            )
+            ).skip(random.randint(0, collection.count() - 1)).limit(1)[0]
         if cursor.count() > 0:
             post = cursor[0]
         else:
@@ -58,6 +60,10 @@ class DBShell:
     def update_doc_for_card(self, is_not_test_word, pers_id, doc_id, correctness):
         if (is_not_test_word):
             if (correctness):
+                # delc = self.db[str(pers_id)]['known_words'].delete_one(
+                #     {'$and':{{"_id": doc_id }, {'deck': {'$gt': self.NUM_DECKS}}}}).deleted_count
+                # if (delc):
+                #     return True
                 info = { "$inc": { "deck": 1 }, "$set": {} }
             else:
                 info = { "$set": { "deck": 0 } }
@@ -73,6 +79,7 @@ class DBShell:
                         str(pers_id): datetime.datetime.utcnow()
                     }
                 })
+        # return False
 
     def insert_doc_for_card(self, tmsg, collection, tr_request, lang, tr_response):
         collection.insert_one({"word": tr_request, "trl": tr_response})
