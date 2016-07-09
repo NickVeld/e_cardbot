@@ -56,8 +56,14 @@ class API:
     def send(self, message, chat_id, reply_to_message_id=0, keyboard=None):
         return self.telegram.send(message, chat_id, reply_to_message_id)
 
+    def send_inline_keyboard(self, message, chat_id, inline_keyboard, reply_to_message_id=0):
+        return self.telegram.send_inline_keyboard(message, chat_id, inline_keyboard, reply_to_message_id)
+
     def edit(self, message, chat_id, inline_keyboard, message_id):
         return self.telegram.edit(message, chat_id, inline_keyboard, message_id)
+
+    def get_inline_text_keyboard(self, source):
+        return self.telegram.get_inline_text_keyboard(source)
 
     def translate(self, request, lang, userl="en"):
         return self.translator.translate(request, lang, userl)

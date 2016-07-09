@@ -333,10 +333,10 @@ class SimpleCard(BaseWorker):
             self.waitlist[(tmsg.pers_id, tmsg.chat_id)].append(history)
             if tmsg.is_inline:
                 print(self.tAPI.edit(history + "Помните ли вы слово \"" + post['word'] + "\"?",
-                                 tmsg.chat_id, self.tAPI.telegram.get_inline_text_keyboard("Yes\nNo\nStop"), tmsg.id))
+                                 tmsg.chat_id, self.tAPI.get_inline_text_keyboard("Yes\nNo\nStop"), tmsg.id))
             else:
-                print(self.tAPI.telegram.send_inline_keyboard(history + "Помните ли вы слово \"" + post['word'] + "\"?",
-                                 tmsg.chat_id, self.tAPI.telegram.get_inline_text_keyboard("Yes\nNo\nStop"), tmsg.id))
+                print(self.tAPI.send_inline_keyboard(history + "Помните ли вы слово \"" + post['word'] + "\"?",
+                                 tmsg.chat_id, self.tAPI.get_inline_text_keyboard("Yes\nNo\nStop"), tmsg.id))
         return 0
 
 
@@ -448,7 +448,7 @@ class OptionCard(BaseWorker):
                                                   , tmsg.pers_id, self.waitlist[(tmsg.pers_id, tmsg.chat_id)][0], True)
                 else:
                     print(tmsg.msg)
-                    self.tAPI.telegram.edit("Попробуйте еще раз.\n" + tmsg.text_of_inline_root, tmsg.chat_id,
+                    self.tAPI.edit("Попробуйте еще раз.\n" + tmsg.text_of_inline_root, tmsg.chat_id,
                                    self.waitlist[(tmsg.pers_id, tmsg.chat_id)][2], tmsg.id)
                     return 0
         res = self.tAPI.get_doc_for_card(tmsg, collection, (lambda x:len(list(
@@ -465,7 +465,7 @@ class OptionCard(BaseWorker):
                            tmsg.chat_id, None, tmsg.id)
         else:
             self.waitlist[(tmsg.pers_id, tmsg.chat_id)] = res[1]
-            current_keyboard = self.tAPI.telegram.get_inline_text_keyboard("Next word\tStop it")
+            current_keyboard = self.tAPI.get_inline_text_keyboard("Next word\tStop it")
             chosen = (collection if self.waitlist[(tmsg.pers_id, tmsg.chat_id)][1]
                             else self.tAPI.db['common']).find({'lang': post['lang']})
             for doc in chosen:
@@ -488,7 +488,7 @@ class OptionCard(BaseWorker):
             if tmsg.is_inline:
                 print(self.tAPI.edit(draft, tmsg.chat_id, current_keyboard, tmsg.id))
             else:
-                print(self.tAPI.telegram.send_inline_keyboard(draft, tmsg.chat_id, current_keyboard, tmsg.id))
+                print(self.tAPI.send_inline_keyboard(draft, tmsg.chat_id, current_keyboard, tmsg.id))
             self.waitlist[(tmsg.pers_id, tmsg.chat_id)].append(current_keyboard)
         return 0
 
@@ -580,7 +580,7 @@ class HangCard(BaseWorker):
             self.tAPI.send("Мне не о чем вас спросить.", tmsg.chat_id, tmsg.id)
         else:
             state = [post['word'], "- " * len(post['word']), 6, self.default_keyboard(post['lang']), post['word']]
-            print(self.tAPI.telegram.send_inline_keyboard(self.tAPI.db.tr.find_one({"word": post['word']})["trl"] + '\n'
+            print(self.tAPI.send_inline_keyboard(self.tAPI.db.tr.find_one({"word": post['word']})["trl"] + '\n'
             + self.state_to_string(state), tmsg.chat_id, state[3]))
             self.waitlist[(tmsg.pers_id, tmsg.chat_id)] = state
         return 0
@@ -603,13 +603,13 @@ class HangCard(BaseWorker):
 
     def default_keyboard(self, lang):
         if lang == "en":
-            return self.tAPI.telegram.get_inline_text_keyboard(
+            return self.tAPI.get_inline_text_keyboard(
                 """a\tb\tc\td\te\tf\tg\th\ti\nj\tk\tl\tm\tn\to\tp\tq\tr\ns\tt\tu\tv\tw\tx\ty\tz\nNext\tStop""")
         elif lang == "ru":
-            return self.tAPI.telegram.get_inline_text_keyboard(
+            return self.tAPI.get_inline_text_keyboard(
                 """а\tб\tв\tг\tд\tе\tж\tз\tи\tй\nк\tл\tм\tн\tо\tп\tр\tс\tт\tу\tф\nх\tц\tч\tш\tщ\tъ\tы\tь\tю\tя\nNext\tStop""")
             # return [["/а", "/б", "/в", "/г", "/д", "/е", "/ё", "/ж", "/з", "/и", "/й"],
             #         ["/к", "/л", "/м", "/н", "/о", "/п", "/р", "/с", "/т", "/у", "/ф"],
             #         ["/х", "/ц", "/ч", "/ш", "/щ", "/ъ", "/ы", "/ь", "/э", "/ю", "/я"], ["/Next", "/Stop"]]
         else:
-            return self.tAPI.telegram.get_inline_text_keyboard("No keyboard for this language!\nNext\tStop")
+            return self.tAPI.get_inline_text_keyboard("No keyboard for this language!\nNext\tStop")
