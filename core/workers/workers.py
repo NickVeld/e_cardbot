@@ -92,6 +92,7 @@ class Humanity(BaseWorker):
         tmsg.text_replace(r"^(((\/| )*)переведи(.*)слово)", Translator.COMMAND, self.re.sub)
         tmsg.text_replace(r"^(((\/| )*)переведи(.*)на английский)", PhraseTranslator.COMMAND + "en", self.re.sub)
         tmsg.text_replace(r"^(((\/| )*)переведи(.*)на русский)", PhraseTranslator.COMMAND + "ru", self.re.sub)
+        tmsg.text_replace(r"^(((\/| )*)удали(.*)карточку)", CardDeleter.COMMAND, self.re.sub)
         choice = random.randint(0, 4)
         if choice == 1:
             choice = TranslationCard.COMMAND
@@ -159,6 +160,51 @@ class Translator(BaseWorker):
                     self.tAPI.insert_doc_for_card(tmsg, collection, txt, lang, res)
         else:
             print(self.tAPI.send("l " + post["trl"], tmsg.chat_id, tmsg.id))
+
+        if is_chain:
+            self.waitlist.remove((tmsg.pers_id, tmsg.chat_id))
+        return 0
+
+
+class CardDeleter(BaseWorker):
+    COMMAND = "/rm"
+    HELP = COMMAND + " слово - бот удаляет карточку с данным словом из Вашего набора.\n\n"
+
+    waitlist = set()
+
+    def is_it_for_me(self, tmsg):
+        if ((tmsg.pers_id, tmsg.chat_id) in self.waitlist) and tmsg.is_inline:
+            return True
+        if tmsg.text.startswith(self.COMMAND):
+            if not self.tAPI.DB_IS_ENABLED:
+                print(self.tAPI.send("Этот режим сейчас недоступен!", tmsg.chat_id, tmsg.id))
+            elif self.tAPI.NO_CARDS_GROUPS and (tmsg.chat_id != tmsg.pers_id):
+                print(self.tAPI.send("Использование режима в групповом чате отключено!", tmsg.chat_id, tmsg.id))
+            elif self.tAPI.db[str(tmsg.pers_id)]['known_words'].count() == 0 and not self.tAPI.TEST_WORDS:
+                print(self.tAPI.send("Вы не переводили слов, поэтому не могу запустить этот режим.", tmsg.chat_id,
+                                     tmsg.id))
+            else:
+                return True
+        return False
+
+    def run(self, tmsg):
+        is_chain = (tmsg.pers_id, tmsg.chat_id) in self.waitlist
+        txt = ""
+        if not (is_chain or
+                    ((tmsg.pers_id == tmsg.chat_id) and not tmsg.text.startswith("/"))):
+            if len(tmsg.text) < 4:
+                self.tAPI.send("Введите слово.", tmsg.chat_id)
+                self.waitlist.add((tmsg.pers_id, tmsg.chat_id))
+                return 1
+            else:
+                txt = tmsg.text[3:].lstrip().lower()
+        else:
+            txt = tmsg.text.lstrip().lower()
+        if txt.startswith('/'):
+            txt = txt[1:]
+        collection = self.tAPI.db[str(tmsg.pers_id)]["known_words"]
+        del_c = collection.delete_one({"word": txt}).deleted_count
+        print(self.tAPI.send("Карточка успешно удалена" if del_c else "Такой карточки нет.", tmsg.chat_id, tmsg.id))
 
         if is_chain:
             self.waitlist.remove((tmsg.pers_id, tmsg.chat_id))
