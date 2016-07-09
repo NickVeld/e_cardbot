@@ -27,6 +27,7 @@ config['included_workers'] = [
     "Stop",
     "Humanity",
     "Translator",
+    "CardDeleter",
     "PhraseTranslator",
     "Info",
     "SimpleCard",
@@ -38,6 +39,4 @@ config["cards_is_allowed_for_groups"] = True
 config["card_cooldown_at_minutes"] = 1
 config["test_words"] = True
 config.initial_comment = ["Change values which you want, rename file to \"config.cfg\" and delete this string!"]
-config.final_comment = ["Warning: Allowing cards for groups cause an undefined behavior "
-                        "because of inline keyboards disallowed at groups."]
 config.write()
