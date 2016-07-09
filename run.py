@@ -1,13 +1,14 @@
 from configobj import ConfigObj
 
-import core.workers.workers as lworkers
-from core.apis import bot_api
-from core.engine import bot_engine
+from core.workers.workers import WorkersList
+from core.apis.bot_api import API
+from core.engine.bot_engine import BotCycle
 
 data = dict()
 
 cfg = ConfigObj("config.cfg")
-tapi = bot_api.API()
+
+tapi = API()
 tapi.get_from_config(cfg)
 
 try:
@@ -24,7 +25,7 @@ except Exception as ex:
     offset = 163111506
 
 tapi.offset = offset
-bs = bot_engine.BotCycle(tapi, lworkers.WorkersList.get_workers(lworkers.WorkersList, cfg["included_workers"], tapi))
+bs = BotCycle(tapi, WorkersList.get_workers(WorkersList, cfg["included_workers"], tapi))
 bs.run()
 
 try:
