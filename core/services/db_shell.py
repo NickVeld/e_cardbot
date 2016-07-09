@@ -45,9 +45,9 @@ class DBShell:
             "d.setMinutes(d.getMinutes()-" + str(self.COOLDOWN_M) + "*Math.pow(2, this.deck)); "
             "return d.getTime() - this.lastRevised.getTime() > 0;"
             "}")
-            ).skip(random.randint(0, collection.count() - 1)).limit(1)[0]
+            )
         if cursor.count() > 0:
-            post = cursor[0]
+            post = cursor.skip(random.randint(0, cursor.count() - 1)).limit(1)[0]
         else:
             post = None
         if post == None or not additional_condition(post["lang"]):
