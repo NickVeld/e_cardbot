@@ -91,3 +91,9 @@ class DBShell:
                 "deck": 1
             }
         )
+
+    def modify_activity(self, pers_id, amount):
+        h = datetime.datetime.hour
+        for i in range(0, 3):
+            p = int(h) - i + (24 if int(h) < i else 0)
+            self.db[str(pers_id)]['activity'][datetime.datetime.utcnow().weekday].update_many({}, {'$inc':{str(p): amount}})
