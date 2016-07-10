@@ -11,7 +11,7 @@ def now_is_belong_to(period):
 def get_inline_text_keyboard():
     keyboard = []
     for worker in WorkersList.workers:
-        if worker.endswith('Card'):
+        if worker.endswith('Card') and not worker == 'HangCard':
             keyboard.append([{'text': worker.replace("Card", " card")
                                  , 'callback_data': getattr(sys.modules[__name__], str).COMMAND}])
     return keyboard
