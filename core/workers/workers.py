@@ -161,6 +161,8 @@ class Translator(BaseWorker):
         else:
             print(self.tAPI.send("l " + post["trl"], tmsg.chat_id, tmsg.id))
 
+        self.tAPI.db_shell.modify_activity(tmsg.pers_id, 1)
+
         if is_chain:
             self.waitlist.remove((tmsg.pers_id, tmsg.chat_id))
         return 0
@@ -287,6 +289,7 @@ class SimpleCard(BaseWorker):
             elif self.tAPI.db[str(tmsg.pers_id)]['known_words'].count() == 0 and not self.tAPI.TEST_WORDS:
                 print(self.tAPI.send("Вы не переводили слов, поэтому не могу запустить этот режим.", tmsg.chat_id, tmsg.id))
             else:
+                self.tAPI.db_shell.modify_activity(tmsg.pers_id, 1)
                 return True
         return False
 
@@ -359,6 +362,7 @@ class TranslationCard(BaseWorker):
                 print(self.tAPI.send("Вы не переводили слов, поэтому не могу запустить этот режим.", tmsg.chat_id, tmsg.id))
             else:
                 self.tAPI.send("/Stop - остановить режим. \n /Next - следующее слово.", tmsg.chat_id, tmsg.id)
+                self.tAPI.db_shell.modify_activity(tmsg.pers_id, 10)
                 return True
         return False
 
@@ -422,6 +426,7 @@ class OptionCard(BaseWorker):
                 print(self.tAPI.send("Вы не перевели еще 4 слов, поэтому не могу запустить этот режим.", tmsg.chat_id,
                                      tmsg.id))
             else:
+                self.tAPI.db_shell.modify_activity(tmsg.pers_id, 10)
                 return True
         return False
 
@@ -511,6 +516,7 @@ class HangCard(BaseWorker):
                 print(self.tAPI.send("Вы не переводили слов, поэтому не могу запустить этот режим.", tmsg.chat_id, tmsg.id))
             else:
                 self.tAPI.send("Stop - остановить режим. \n Next - следующее слово.", tmsg.chat_id, tmsg.id)
+                self.tAPI.db_shell.modify_activity(tmsg.pers_id, 5)
                 return True
         return False
 
