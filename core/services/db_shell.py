@@ -39,15 +39,24 @@ class DBShell:
                  }
             ]})
 
+    def top_bit(self, num, min_possible, max_possible):
+        pass
+
     def get_doc_for_card(self, tmsg, collection, additional_condition=(lambda x: True)):
+        max_deck = collection.find().sort({'deck':-1}).limit(1)[0]['deck']
+        deck_num = self.top_bit(random.randint(1, 2**(max_deck+1)-1), 0, max_deck)
         cursor = collection.find({}).where(Code("function() {"
             "var d = new Date(); "
             "d.setMinutes(d.getMinutes()-" + str(self.COOLDOWN_M) + "*Math.pow(2, this.deck)); "
-            "return d.getTime() - this.lastRevised.getTime() > 0;"
+            # "if (d.getTime() - this.lastRevised.getTime() > 0){"
+            #     ""
+            #     "}"
+            # "else return false;"
+            "return (d.getTime() - this.lastRevised.getTime() > 0) && this.deck == " + str(deck_num) + ";"
             "}")
             )
         if cursor.count() > 0:
-            post = cursor.skip(random.randint(0, cursor.count() - 1)).limit(1)[0]
+            post = cursor.skip(random.randint(1, cursor.count-1)).limit(1)[0]
         else:
             post = None
         if post == None or not additional_condition(post["lang"]):
