@@ -40,7 +40,15 @@ class DBShell:
             ]})
 
     def top_bit(self, num, min_possible, max_possible):
-        pass
+        if min_possible == max_possible:
+            return max_possible
+        base = 2**((max_possible-min_possible)//2)
+        if num == base:
+            return (max_possible-min_possible)//2
+        elif num < base:
+            return self.top_bit(num, min_possible, (max_possible - min_possible)//2 - 1)
+        else:
+            return self.top_bit(num, (max_possible - min_possible) // 2, max_possible)
 
     def get_doc_for_card(self, tmsg, collection, additional_condition=(lambda x: True)):
         max_deck = collection.find().sort({'deck':-1}).limit(1)[0]['deck']
