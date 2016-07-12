@@ -74,7 +74,8 @@ class DBShell:
             return self.top_bit(num, base, max_possible)
 
     def get_doc_for_card(self, tmsg, collection, additional_condition=(lambda x: True)):
-        sorted_cards = collection.find().where(Code("function() {"
+        post = None
+        sorted_cards = list(collection.find().where(Code("function() {"
             "var d = new Date(); "
             "d.setMinutes(d.getMinutes()-" + str(self.COOLDOWN_M) + "*Math.pow(2, this.deck)); "
             # "if (d.getTime() - this.lastRevised.getTime() > 0){"
@@ -83,11 +84,16 @@ class DBShell:
             # "else return false;"
             "return (d.getTime() - this.lastRevised.getTime() > 0);"
             "}")
-            ).sort({'deck':-1}).toArray()
+            ).sort([('deck', 1)]))
         if len(sorted_cards) > 0:
-            pass
-        else:
-            post = None
+            max_deck = sorted_cards[len(sorted_cards) - 1]['deck']
+            min_deck = sorted_cards[0]['deck']
+            deck_num = self.top_bit(random.randint(2 ** (min_deck), 2 ** (max_deck + 1) - 1), min_deck, max_deck)
+            for i in range(0, len(sorted_cards)):
+                if sorted_cards[i]['deck'] > deck_num:
+                    post = sorted_cards[i-1]
+            if post == None:
+                post = sorted_cards[len(sorted_cards)-1]
         if post == None or not additional_condition(post["lang"]):
             if self.TEST_WORDS:
                 post = self.get_test_word(tmsg.pers_id)
@@ -131,6 +137,7 @@ class DBShell:
         )
 
     def modify_activity(self, pers_id, amount):
+        return
         h = datetime.datetime.hour
         for i in range(0, 3):
             p = int(h) - i + (24 if int(h) < i else 0)
