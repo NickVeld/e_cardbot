@@ -39,32 +39,53 @@ class DBShell:
                  }
             ]})
 
+    @staticmethod
+    def tester_top_bit():
+        for i in range(1, 2**9-1):
+            print(str(DBShell.test_version_top_bit(i, 0, 8)) + ' ' + str(i))
+
+    @staticmethod
+    def test_version_top_bit(num, min_possible, max_possible):
+        if min_possible == max_possible:
+            return max_possible
+        if max_possible - min_possible == 1:
+            return min_possible if num < 2 ** max_possible else max_possible
+        base = min_possible + (max_possible - min_possible) // 2
+        el = 2 ** base
+        if num == el:
+            return base
+        elif num < el:
+            return DBShell.test_version_top_bit(num, min_possible, base - 1)
+        else:
+            return DBShell.test_version_top_bit(num, base, max_possible)
+
     def top_bit(self, num, min_possible, max_possible):
         if min_possible == max_possible:
             return max_possible
-        base = 2**((max_possible-min_possible)//2)
-        if num == base:
-            return (max_possible-min_possible)//2
-        elif num < base:
-            return self.top_bit(num, min_possible, (max_possible - min_possible)//2 - 1)
+        if max_possible - min_possible == 1:
+            return min_possible if num < 2**max_possible else max_possible
+        base = min_possible + (max_possible - min_possible)//2
+        el = 2**base
+        if num == el:
+            return base
+        elif num < el:
+            return self.top_bit(num, min_possible, base - 1)
         else:
-            return self.top_bit(num, (max_possible - min_possible) // 2, max_possible)
+            return self.top_bit(num, base, max_possible)
 
     def get_doc_for_card(self, tmsg, collection, additional_condition=(lambda x: True)):
-        max_deck = collection.find().sort({'deck':-1}).limit(1)[0]['deck']
-        deck_num = self.top_bit(random.randint(1, 2**(max_deck+1)-1), 0, max_deck)
-        cursor = collection.find({}).where(Code("function() {"
+        sorted_cards = collection.find().where(Code("function() {"
             "var d = new Date(); "
             "d.setMinutes(d.getMinutes()-" + str(self.COOLDOWN_M) + "*Math.pow(2, this.deck)); "
             # "if (d.getTime() - this.lastRevised.getTime() > 0){"
             #     ""
             #     "}"
             # "else return false;"
-            "return (d.getTime() - this.lastRevised.getTime() > 0) && this.deck == " + str(deck_num) + ";"
+            "return (d.getTime() - this.lastRevised.getTime() > 0);"
             "}")
-            )
-        if cursor.count() > 0:
-            post = cursor.skip(random.randint(1, cursor.count-1)).limit(1)[0]
+            ).sort({'deck':-1}).toArray()
+        if len(sorted_cards) > 0:
+            pass
         else:
             post = None
         if post == None or not additional_condition(post["lang"]):
