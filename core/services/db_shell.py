@@ -41,8 +41,8 @@ class DBShell:
 
     def sum_weight(self, decks, rule):
         sum = 0
-        for i in range(len(decks)):
-            sum += decks[i] * rule(i)
+        for i, deck in enumerate(decks):
+            sum += deck * rule(i)
         return sum
 
     def get_doc_for_card(self, tmsg, collection, additional_condition=(lambda x: True)):
@@ -66,11 +66,13 @@ class DBShell:
             rule = lambda x: 2**(len(curr_decks) - 1 - x)
             rand_num = random.randint(1, self.sum_weight(curr_decks, rule))
             for i, el in enumerate(sorted_cards):
-                rand_num -= rule(el['deck'])
+                rand_num -= rule(el['deck'] - min_deck)
                 if rand_num <= 0:
                     post = el
+                    print(post['deck'])
                     break
             if post == None:
+                print('Beda')
                 post = sorted_cards[len(sorted_cards)-1]
         if post == None or not additional_condition(post["lang"]):
             if self.TEST_WORDS:
