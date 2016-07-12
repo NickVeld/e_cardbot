@@ -39,39 +39,11 @@ class DBShell:
                  }
             ]})
 
-    @staticmethod
-    def tester_top_bit():
-        for i in range(1, 2**9-1):
-            print(str(DBShell.test_version_top_bit(i, 0, 8)) + ' ' + str(i))
-
-    @staticmethod
-    def test_version_top_bit(num, min_possible, max_possible):
-        if min_possible == max_possible:
-            return max_possible
-        if max_possible - min_possible == 1:
-            return min_possible if num < 2 ** max_possible else max_possible
-        base = min_possible + (max_possible - min_possible) // 2
-        el = 2 ** base
-        if num == el:
-            return base
-        elif num < el:
-            return DBShell.test_version_top_bit(num, min_possible, base - 1)
-        else:
-            return DBShell.test_version_top_bit(num, base, max_possible)
-
-    def top_bit(self, num, min_possible, max_possible):
-        if min_possible == max_possible:
-            return max_possible
-        if max_possible - min_possible == 1:
-            return min_possible if num < 2**max_possible else max_possible
-        base = min_possible + (max_possible - min_possible)//2
-        el = 2**base
-        if num == el:
-            return base
-        elif num < el:
-            return self.top_bit(num, min_possible, base - 1)
-        else:
-            return self.top_bit(num, base, max_possible)
+    def sum_weight(self, decks, rule):
+        sum = 0
+        for i in range(len(decks)):
+            sum += decks[i] * rule(i)
+        return sum
 
     def get_doc_for_card(self, tmsg, collection, additional_condition=(lambda x: True)):
         post = None
@@ -88,10 +60,16 @@ class DBShell:
         if len(sorted_cards) > 0:
             max_deck = sorted_cards[len(sorted_cards) - 1]['deck']
             min_deck = sorted_cards[0]['deck']
-            deck_num = self.top_bit(random.randint(2 ** (min_deck), 2 ** (max_deck + 1) - 1), min_deck, max_deck)
-            for i in range(0, len(sorted_cards)):
-                if sorted_cards[i]['deck'] > deck_num:
-                    post = sorted_cards[i-1]
+            curr_decks = [0 for i in range(max_deck + 1 - min_deck)]
+            for card in sorted_cards:
+                curr_decks[card['deck']-min_deck] = curr_decks[card['deck']-min_deck] + 1
+            rule = lambda x: 2**(len(curr_decks) - 1 - x)
+            rand_num = random.randint(1, self.sum_weight(curr_decks, rule))
+            for i, el in enumerate(sorted_cards):
+                rand_num -= rule(el['deck'])
+                if rand_num <= 0:
+                    post = el
+                    break
             if post == None:
                 post = sorted_cards[len(sorted_cards)-1]
         if post == None or not additional_condition(post["lang"]):
