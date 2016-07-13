@@ -295,7 +295,10 @@ class SimpleCard(BaseWorker):
 
     def run(self, tmsg):
         collection = self.tAPI.db[str(tmsg.pers_id)]['known_words']
-        history = ""
+        try:
+            history = self.waitlist[(tmsg.pers_id, tmsg.chat_id)][2]
+        except:
+            history = ""
         if (tmsg.pers_id, tmsg.chat_id) in self.waitlist:
             if tmsg.text == "/Stop":
                 self.tAPI.edit("Я вышел из режима \"simple cards\".",
@@ -309,7 +312,7 @@ class SimpleCard(BaseWorker):
                     {"_id": self.waitlist[(tmsg.pers_id, tmsg.chat_id)][0]}
                 )
                 post = self.tAPI.db.tr.find_one({"word": post['word']})
-                history = self.waitlist[(tmsg.pers_id, tmsg.chat_id)][2] + post["word"] + ':\n' + post["trl"] + '\n\n'
+                history = history + post["word"] + ':\n' + post["trl"] + '\n\n'
                 # self.tAPI.send(post["trl"], tmsg.chat_id, tmsg.id)
                 self.tAPI.update_doc_for_card(self.waitlist[(tmsg.pers_id, tmsg.chat_id)][1]
                                               , tmsg.pers_id, self.waitlist[(tmsg.pers_id, tmsg.chat_id)][0], False)
@@ -338,7 +341,7 @@ class SimpleCard(BaseWorker):
                 print(self.tAPI.edit(history + "Помните ли вы слово \"" + post['word'] + "\"?",
                                  tmsg.chat_id, self.tAPI.get_inline_text_keyboard("Yes\nNo\nStop"), tmsg.id))
             else:
-                print(self.tAPI.send_inline_keyboard(history + "Помните ли вы слово \"" + post['word'] + "\"?",
+                print(self.tAPI.send_inline_keyboard("Помните ли вы слово \"" + post['word'] + "\"?",
                                  tmsg.chat_id, self.tAPI.get_inline_text_keyboard("Yes\nNo\nStop"), tmsg.id))
         return 0
 
