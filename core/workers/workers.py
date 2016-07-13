@@ -322,6 +322,7 @@ class SimpleCard(BaseWorker):
         except:
             history = ""
         if (tmsg.pers_id, tmsg.chat_id) in self.waitlist:
+            self.waitlist[(tmsg.pers_id, tmsg.chat_id)][3] = tmsg.id
             if tmsg.text == "/Stop":
                 self.quit(tmsg.pers_id, tmsg.chat_id, msg_id=tmsg.id)
                 return 0
