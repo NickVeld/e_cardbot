@@ -56,7 +56,7 @@ class Blacklist(BaseWorker):
         # TODO adding and deleting from blacklist.
         return 0
 
-    def quit(self, pers_id, chat_id, additional_info, msg_id=None):
+    def quit(self, pers_id, chat_id, additional_info = '', msg_id=None):
         pass
 
 
@@ -70,7 +70,7 @@ class Stop(BaseWorker):
         print(self.tAPI.send("I'll be back, " + tmsg.name + "!", tmsg.chat_id))
         return 2
 
-    def quit(self, pers_id, chat_id, additional_info, msg_id = None):
+    def quit(self, pers_id, chat_id, additional_info = '', msg_id = None):
         pass
 
 
@@ -111,7 +111,7 @@ class Humanity(BaseWorker):
         tmsg.text_replace(r"^(((\/| )*)давай(.*)карточки)", choice, self.re.sub)
         return 1
 
-    def quit(self, pers_id, chat_id, additional_info, msg_id = None):
+    def quit(self, pers_id, chat_id, additional_info = '', msg_id = None):
         pass
 
 
@@ -172,12 +172,12 @@ class Translator(BaseWorker):
 
         self.tAPI.db_shell.modify_activity(tmsg.pers_id, 1)
 
-        if is_chain:
-            self.waitlist.remove((tmsg.pers_id, tmsg.chat_id))
+        quit(tmsg.pers_id, tmsg.chat_id)
         return 0
 
-    def quit(self, pers_id, chat_id, additional_info, msg_id = None):
-        pass
+    def quit(self, pers_id, chat_id, additional_info = '', msg_id = None):
+        if (pers_id, chat_id) in self.waitlist:
+            self.waitlist.remove((pers_id, chat_id))
 
 
 class CardDeleter(BaseWorker):
@@ -224,7 +224,7 @@ class CardDeleter(BaseWorker):
             self.waitlist.remove((tmsg.pers_id, tmsg.chat_id))
         return 0
 
-    def quit(self, pers_id, chat_id, additional_info, msg_id = None):
+    def quit(self, pers_id, chat_id, additional_info = '', msg_id = None):
         pass
 
 
@@ -244,7 +244,7 @@ class Info(BaseWorker):
         self.tAPI.send(HELP, tmsg.chat_id)
         return 0
 
-    def quit(self, pers_id, chat_id, additional_info, msg_id = None):
+    def quit(self, pers_id, chat_id, additional_info = '', msg_id = None):
         pass
 
 
@@ -285,12 +285,12 @@ class PhraseTranslator(BaseWorker):
             print(self.tAPI.send("Нет перевода!", tmsg.chat_id, tmsg.id))
         else:
             print(self.tAPI.send(res, tmsg.chat_id, tmsg.id))
-        if is_chain:
-            self.waitlist.pop((tmsg.pers_id, tmsg.chat_id))
+        quit(tmsg.pers_id, tmsg.chat_id)
         return 0
 
-    def quit(self, pers_id, chat_id, additional_info, msg_id = None):
-        pass
+    def quit(self, pers_id, chat_id, additional_info='', msg_id=None):
+        if (pers_id, chat_id) in self.waitlist:
+            self.waitlist.pop((pers_id, chat_id))
 
 
 class SimpleCard(BaseWorker):
@@ -367,7 +367,7 @@ class SimpleCard(BaseWorker):
                                  tmsg.chat_id, self.tAPI.get_inline_text_keyboard("Yes\nNo\nStop"), tmsg.id))
         return 0
 
-    def quit(self, pers_id, chat_id, additional_info, msg_id = None):
+    def quit(self, pers_id, chat_id, additional_info = '', msg_id = None):
         pass
 
 
@@ -434,7 +434,7 @@ class TranslationCard(BaseWorker):
             self.waitlist[(tmsg.pers_id, tmsg.chat_id)] = res[1]
         return 0
 
-    def quit(self, pers_id, chat_id, additional_info, msg_id = None):
+    def quit(self, pers_id, chat_id, additional_info = '', msg_id = None):
         pass
 
 
@@ -528,7 +528,7 @@ class OptionCard(BaseWorker):
             self.waitlist[(tmsg.pers_id, tmsg.chat_id)].append(current_keyboard)
         return 0
 
-    def quit(self, pers_id, chat_id, additional_info, msg_id = None):
+    def quit(self, pers_id, chat_id, additional_info = '', msg_id = None):
         pass
 
 
@@ -625,7 +625,7 @@ class HangCard(BaseWorker):
             self.waitlist[(tmsg.pers_id, tmsg.chat_id)] = state
         return 0
 
-    def quit(self, pers_id, chat_id, additional_info, msg_id = None):
+    def quit(self, pers_id, chat_id, additional_info = '', msg_id = None):
         pass
 
     def state_to_string(self, state):
