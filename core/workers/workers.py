@@ -465,10 +465,7 @@ class OptionCard(BaseWorker):
         collection = self.tAPI.db[str(tmsg.pers_id)]['known_words']
         if (tmsg.pers_id, tmsg.chat_id) in self.waitlist:
             if tmsg.text == "/Stop it":
-                self.tAPI.edit("Я вышел из режима \"4option cards\".",
-                               tmsg.chat_id, None, tmsg.id)
-                if (tmsg.pers_id, tmsg.chat_id) in self.waitlist:
-                    self.waitlist.pop((tmsg.pers_id, tmsg.chat_id))
+                self.quit(tmsg.pers_id, tmsg.chat_id)
                 return 0
             else:
                 if tmsg.text != "/Next word":
@@ -493,12 +490,10 @@ class OptionCard(BaseWorker):
         ))) > 3))
         post = res[0]
         if post == None:
-            if (tmsg.pers_id, tmsg.chat_id) in self.waitlist:
-                self.waitlist.pop((tmsg.pers_id, tmsg.chat_id))
-            self.tAPI.edit("Мне не о чем вас спросить сейчас, попробуйте включить этот режим через несколько("
+            self.quit(tmsg.pers_id, tmsg.chat_id, "Мне не о чем вас спросить сейчас, попробуйте включить этот режим через несколько("
                            + str(self.tAPI.COOLDOWN_M) + ") минут.\n"
                                                          "Я вышел из режима \"4option cards\".",
-                           tmsg.chat_id, None, tmsg.id)
+                           tmsg.id)
         else:
             self.waitlist[(tmsg.pers_id, tmsg.chat_id)] = res[1]
             current_keyboard = self.tAPI.get_inline_text_keyboard("Next word\tStop it")
@@ -529,7 +524,9 @@ class OptionCard(BaseWorker):
         return 0
 
     def quit(self, pers_id, chat_id, additional_info = '', msg_id = 0):
-        pass
+        if (pers_id, chat_id) in self.waitlist:
+            self.waitlist.pop((pers_id, chat_id))
+        self.tAPI.edit(additional_info + "Я вышел из режима \"4option cards\".", chat_id, None, msg_id)
 
 
 class HangCard(BaseWorker):
