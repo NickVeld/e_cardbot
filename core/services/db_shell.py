@@ -120,4 +120,5 @@ class DBShell:
         h = datetime.datetime.hour
         for i in range(0, 3):
             p = int(h) - i + (24 if int(h) < i else 0)
-            self.db[str(pers_id)]['activity'][datetime.datetime.utcnow().weekday].update_many({}, {'$inc':{str(p): amount}})
+            self.db[str(pers_id)]['activity'].update_many(
+                {'weekday': datetime.datetime.utcnow().weekday}, {'$inc':{str(p): amount}})
