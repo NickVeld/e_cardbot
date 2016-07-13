@@ -69,7 +69,6 @@ class DBShell:
                 rand_num -= rule(el['deck'] - min_deck)
                 if rand_num <= 0:
                     post = el
-                    print(post['deck'])
                     break
             if post == None:
                 print('Beda')
