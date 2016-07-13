@@ -172,7 +172,7 @@ class Translator(BaseWorker):
 
         self.tAPI.db_shell.modify_activity(tmsg.pers_id, 1)
 
-        quit(tmsg.pers_id, tmsg.chat_id)
+        self.quit(tmsg.pers_id, tmsg.chat_id)
         return 0
 
     def quit(self, pers_id, chat_id, additional_info = '', msg_id = 0):
@@ -220,12 +220,12 @@ class CardDeleter(BaseWorker):
         del_c = collection.delete_one({"word": txt}).deleted_count
         print(self.tAPI.send("Карточка успешно удалена" if del_c else "Такой карточки нет.", tmsg.chat_id, tmsg.id))
 
-        if is_chain:
-            self.waitlist.remove((tmsg.pers_id, tmsg.chat_id))
+        self.quit(tmsg.pers_id, tmsg.chat_id)
         return 0
 
     def quit(self, pers_id, chat_id, additional_info = '', msg_id = 0):
-        pass
+        if (pers_id, chat_id) in self.waitlist:
+            self.waitlist.remove((pers_id, chat_id))
 
 
 class Info(BaseWorker):
@@ -285,7 +285,7 @@ class PhraseTranslator(BaseWorker):
             print(self.tAPI.send("Нет перевода!", tmsg.chat_id, tmsg.id))
         else:
             print(self.tAPI.send(res, tmsg.chat_id, tmsg.id))
-        quit(tmsg.pers_id, tmsg.chat_id)
+        self.quit(tmsg.pers_id, tmsg.chat_id)
         return 0
 
     def quit(self, pers_id, chat_id, additional_info='', msg_id=None):
@@ -348,7 +348,7 @@ class SimpleCard(BaseWorker):
         res = self.tAPI.get_doc_for_card(tmsg, collection)
         post = res[0]
         if post == None:
-            quit(tmsg.pers_id, tmsg.chat_id, "Мне не о чем вас спросить сейчас, попробуйте включить этот режим через несколько("\
+            self.quit(tmsg.pers_id, tmsg.chat_id, "Мне не о чем вас спросить сейчас, попробуйте включить этот режим через несколько("\
                    + str(self.tAPI.COOLDOWN_M) +") минут.\n", tmsg.id)
         else:
             self.waitlist[(tmsg.pers_id, tmsg.chat_id)] = res[1]
@@ -423,7 +423,7 @@ class TranslationCard(BaseWorker):
         res = self.tAPI.get_doc_for_card(tmsg, collection)
         post = res[0]
         if post == None:
-            quit(tmsg.pers_id, tmsg.chat_id, "Мне не о чем вас спросить сейчас, попробуйте включить этот режим через несколько("
+            self.quit(tmsg.pers_id, tmsg.chat_id, "Мне не о чем вас спросить сейчас, попробуйте включить этот режим через несколько("
                            + str(self.tAPI.COOLDOWN_M) + ") минут.\n", tmsg.id)
         else:
             print(self.tAPI.send("Напишите /* и без пробела слово, которому соответствует этот перевод:\n\"" +
