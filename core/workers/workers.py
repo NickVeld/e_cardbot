@@ -549,9 +549,7 @@ class HangCard(BaseWorker):
         collection = self.tAPI.db[str(tmsg.pers_id)]['known_words']
         if (tmsg.pers_id, tmsg.chat_id) in self.waitlist:
             if tmsg.text == "/Stop":
-                self.tAPI.edit("Я вышел из режима \"hang cards\".", tmsg.chat_id, None, tmsg.id)
-                if (tmsg.pers_id, tmsg.chat_id) in self.waitlist:
-                    self.waitlist.pop((tmsg.pers_id, tmsg.chat_id))
+                self.quit(tmsg.pers_id, tmsg.chat_id, msg_id=tmsg.id)
                 return 0
             else:
                 if tmsg.text == "/Next":
@@ -606,9 +604,7 @@ class HangCard(BaseWorker):
                         return 0
         post = self.tAPI.get_random_doc(collection if collection.count() > 0 else self.tAPI.db['common'])
         if post == None:
-            if (tmsg.pers_id, tmsg.chat_id) in self.waitlist:
-                self.waitlist.pop((tmsg.pers_id, tmsg.chat_id))
-            self.tAPI.send("Мне не о чем вас спросить.", tmsg.chat_id, tmsg.id)
+            self.quit(tmsg.pers_id, tmsg.chat_id, "Мне не о чем вас спросить.", tmsg.id)
         else:
             state = [post['word'], "- " * len(post['word']), 6, self.default_keyboard(post['lang']), post['word']]
             print(self.tAPI.send_inline_keyboard(self.tAPI.db.tr.find_one({"word": post['word']})["trl"] + '\n'
@@ -616,8 +612,10 @@ class HangCard(BaseWorker):
             self.waitlist[(tmsg.pers_id, tmsg.chat_id)] = state
         return 0
 
-    def quit(self, pers_id, chat_id, additional_info = '', msg_id = 0):
-        pass
+    def quit(self, pers_id, chat_id, additional_info='', msg_id=0):
+        if (pers_id, chat_id) in self.waitlist:
+            self.waitlist.pop((pers_id, chat_id))
+        self.tAPI.edit(additional_info + "Я вышел из режима \"4option cards\".", chat_id, None, msg_id)
 
     def state_to_string(self, state):
         return state[1] + "\nВаше количество жизней: " + str(state[2]) + "."
