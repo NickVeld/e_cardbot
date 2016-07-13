@@ -70,7 +70,7 @@ class Stop(BaseWorker):
         print(self.tAPI.send("I'll be back, " + tmsg.name + "!", tmsg.chat_id))
         return 2
 
-    def quit(self, pers_id, chat_id, additional_info = '', msg_id = None):
+    def quit(self, pers_id, chat_id, additional_info = '', msg_id = 0):
         pass
 
 
@@ -111,7 +111,7 @@ class Humanity(BaseWorker):
         tmsg.text_replace(r"^(((\/| )*)давай(.*)карточки)", choice, self.re.sub)
         return 1
 
-    def quit(self, pers_id, chat_id, additional_info = '', msg_id = None):
+    def quit(self, pers_id, chat_id, additional_info = '', msg_id = 0):
         pass
 
 
@@ -175,7 +175,7 @@ class Translator(BaseWorker):
         quit(tmsg.pers_id, tmsg.chat_id)
         return 0
 
-    def quit(self, pers_id, chat_id, additional_info = '', msg_id = None):
+    def quit(self, pers_id, chat_id, additional_info = '', msg_id = 0):
         if (pers_id, chat_id) in self.waitlist:
             self.waitlist.remove((pers_id, chat_id))
 
@@ -224,7 +224,7 @@ class CardDeleter(BaseWorker):
             self.waitlist.remove((tmsg.pers_id, tmsg.chat_id))
         return 0
 
-    def quit(self, pers_id, chat_id, additional_info = '', msg_id = None):
+    def quit(self, pers_id, chat_id, additional_info = '', msg_id = 0):
         pass
 
 
@@ -244,7 +244,7 @@ class Info(BaseWorker):
         self.tAPI.send(HELP, tmsg.chat_id)
         return 0
 
-    def quit(self, pers_id, chat_id, additional_info = '', msg_id = None):
+    def quit(self, pers_id, chat_id, additional_info = '', msg_id = 0):
         pass
 
 
@@ -423,12 +423,8 @@ class TranslationCard(BaseWorker):
         res = self.tAPI.get_doc_for_card(tmsg, collection)
         post = res[0]
         if post == None:
-            if (tmsg.pers_id, tmsg.chat_id) in self.waitlist:
-                self.waitlist.pop((tmsg.pers_id, tmsg.chat_id))
-            self.tAPI.send("Мне не о чем вас спросить сейчас, попробуйте включить этот режим через несколько("
-                           + str(self.tAPI.COOLDOWN_M) + ") минут.\n"
-                                                    "Я вышел из режима \"translation cards\".",
-                           tmsg.chat_id, tmsg.id)
+            quit(tmsg.pers_id, tmsg.chat_id, "Мне не о чем вас спросить сейчас, попробуйте включить этот режим через несколько("
+                           + str(self.tAPI.COOLDOWN_M) + ") минут.\n", tmsg.id)
         else:
             print(self.tAPI.send("Напишите /* и без пробела слово, которому соответствует этот перевод:\n\"" +
                                  self.tAPI.db.tr.find_one({"word": post['word']})["trl"] + "\"",
@@ -436,8 +432,10 @@ class TranslationCard(BaseWorker):
             self.waitlist[(tmsg.pers_id, tmsg.chat_id)] = res[1]
         return 0
 
-    def quit(self, pers_id, chat_id, additional_info = '', msg_id = None):
-        pass
+    def quit(self, pers_id, chat_id, additional_info = '', msg_id = 0):
+        if (pers_id, chat_id) in self.waitlist:
+            self.waitlist.pop((pers_id, chat_id))
+        self.tAPI.send(additional_info + "Я вышел из режима \"translation cards\".", chat_id, msg_id)
 
 
 class OptionCard(BaseWorker):
@@ -530,7 +528,7 @@ class OptionCard(BaseWorker):
             self.waitlist[(tmsg.pers_id, tmsg.chat_id)].append(current_keyboard)
         return 0
 
-    def quit(self, pers_id, chat_id, additional_info = '', msg_id = None):
+    def quit(self, pers_id, chat_id, additional_info = '', msg_id = 0):
         pass
 
 
@@ -627,7 +625,7 @@ class HangCard(BaseWorker):
             self.waitlist[(tmsg.pers_id, tmsg.chat_id)] = state
         return 0
 
-    def quit(self, pers_id, chat_id, additional_info = '', msg_id = None):
+    def quit(self, pers_id, chat_id, additional_info = '', msg_id = 0):
         pass
 
     def state_to_string(self, state):
