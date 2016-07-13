@@ -323,10 +323,7 @@ class SimpleCard(BaseWorker):
             history = ""
         if (tmsg.pers_id, tmsg.chat_id) in self.waitlist:
             if tmsg.text == "/Stop":
-                self.tAPI.edit("Я вышел из режима \"simple cards\".",
-                            tmsg.chat_id, None, tmsg.id)
-                if (tmsg.pers_id, tmsg.chat_id) in self.waitlist:
-                    self.waitlist.pop((tmsg.pers_id, tmsg.chat_id))
+                self.quit(tmsg.pers_id, tmsg.chat_id, msg_id=tmsg.id)
                 return 0
             elif tmsg.text == "/No":
                 post = (collection if self.waitlist[(tmsg.pers_id, tmsg.chat_id)][1]
@@ -400,10 +397,7 @@ class TranslationCard(BaseWorker):
         collection = self.tAPI.db[str(tmsg.pers_id)]['known_words']
         if (tmsg.pers_id, tmsg.chat_id) in self.waitlist:
             if tmsg.text == "/Stop":
-                self.tAPI.send("Я вышел из режима \"translation cards\".",
-                               tmsg.chat_id, tmsg.id)
-                if (tmsg.pers_id, tmsg.chat_id) in self.waitlist:
-                    self.waitlist.pop((tmsg.pers_id, tmsg.chat_id))
+                self.quit(tmsg.pers_id, tmsg.chat_id, msg_id=tmsg.id)
                 return 0
             else:
                 if tmsg.text != "/Next":
@@ -465,7 +459,7 @@ class OptionCard(BaseWorker):
         collection = self.tAPI.db[str(tmsg.pers_id)]['known_words']
         if (tmsg.pers_id, tmsg.chat_id) in self.waitlist:
             if tmsg.text == "/Stop it":
-                self.quit(tmsg.pers_id, tmsg.chat_id)
+                self.quit(tmsg.pers_id, tmsg.chat_id, msg_id=tmsg.id)
                 return 0
             else:
                 if tmsg.text != "/Next word":
