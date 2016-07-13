@@ -50,10 +50,6 @@ class DBShell:
         sorted_cards = list(collection.find().where(Code("function() {"
             "var d = new Date(); "
             "d.setMinutes(d.getMinutes()-" + str(self.COOLDOWN_M) + "*Math.pow(2, this.deck)); "
-            # "if (d.getTime() - this.lastRevised.getTime() > 0){"
-            #     ""
-            #     "}"
-            # "else return false;"
             "return (d.getTime() - this.lastRevised.getTime() > 0);"
             "}")
             ).sort([('deck', 1)]))
