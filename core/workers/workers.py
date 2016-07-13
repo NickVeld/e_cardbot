@@ -348,17 +348,12 @@ class SimpleCard(BaseWorker):
         res = self.tAPI.get_doc_for_card(tmsg, collection)
         post = res[0]
         if post == None:
-            draft = "Мне не о чем вас спросить сейчас, попробуйте включить этот режим через несколько("\
-                   + str(self.tAPI.COOLDOWN_M) +") минут.\n"\
-                   "Я вышел из режима \"simple cards\"."
-            if (tmsg.pers_id, tmsg.chat_id) in self.waitlist:
-                self.waitlist.pop((tmsg.pers_id, tmsg.chat_id))
-                self.tAPI.edit(draft, tmsg.chat_id, None, tmsg.id)
-            else:
-                self.tAPI.send(draft, tmsg.chat_id, tmsg.id)
+            quit(tmsg.pers_id, tmsg.chat_id, "Мне не о чем вас спросить сейчас, попробуйте включить этот режим через несколько("\
+                   + str(self.tAPI.COOLDOWN_M) +") минут.\n", tmsg.id)
         else:
             self.waitlist[(tmsg.pers_id, tmsg.chat_id)] = res[1]
             self.waitlist[(tmsg.pers_id, tmsg.chat_id)].append(history)
+            self.waitlist[(tmsg.pers_id, tmsg.chat_id)].append(tmsg.id)
             if tmsg.is_inline:
                 print(self.tAPI.edit(history + "Помните ли вы слово \"" + post['word'] + "\"?",
                                  tmsg.chat_id, self.tAPI.get_inline_text_keyboard("Yes\nNo\nStop"), tmsg.id))
@@ -367,8 +362,15 @@ class SimpleCard(BaseWorker):
                                  tmsg.chat_id, self.tAPI.get_inline_text_keyboard("Yes\nNo\nStop"), tmsg.id))
         return 0
 
-    def quit(self, pers_id, chat_id, additional_info = '', msg_id = None):
-        pass
+    def quit(self, pers_id, chat_id, additional_info = '', msg_id = 0):
+        draft = additional_info + "Я вышел из режима \"simple cards\"."
+        if (pers_id, chat_id) in self.waitlist:
+            if msg_id == 0:
+                msg_id = self.waitlist[(pers_id, chat_id)][3]
+            self.waitlist.pop((pers_id, chat_id))
+            self.tAPI.edit(draft, chat_id, None, msg_id)
+        else:
+            self.tAPI.send(draft, chat_id, msg_id)
 
 
 class TranslationCard(BaseWorker):
