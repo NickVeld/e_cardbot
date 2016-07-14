@@ -36,7 +36,9 @@ config['included_workers'] = [
     "HangCard"
 ]
 config["cards_is_allowed_for_groups"] = True
-config["card_cooldown_at_minutes"] = 1
+config["card_delay_at_minutes"] = 1
+config["user_inactivity_time_at_minutes"] = 5
 config["test_words"] = True
 config.initial_comment = ["Change values which you want, rename file to \"config.cfg\" and delete this string!"]
+config.final_comment = [""]
 config.write()
