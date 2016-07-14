@@ -9,6 +9,7 @@ __author__ = 'NickVeld'
 class DBShell:
     def __init__(self):
         self.db = None
+        self.INACT_M = 5
         self.COOLDOWN_M = 1
         # self.NUM_DECKS = 5
         self.TEST_WORDS = False
@@ -17,7 +18,8 @@ class DBShell:
     def get_from_config(self, cfg):
         self.db = (MongoClient(cfg['mongo_settings']['name'], int(cfg['mongo_settings']['port']))
                    [cfg['mongo_settings']['db_name']] if cfg['mongo_settings']['isEnabled'] == 'True' else None)
-        self.COOLDOWN_M = int(cfg["card_cooldown_at_minutes"])
+        self.INACT_M = int(cfg["user_inactivity_time_at_minutes"])
+        self.COOLDOWN_M = int(cfg["card_delay_at_minutes"])
         # self.NUM_DECKS = int(cfg["number_of_decks"]) - 1
         self.TEST_WORDS = cfg.get('test_words', 'False') == 'True'
 
@@ -132,3 +134,9 @@ class DBShell:
         else:
             info = {'$set': {'last': datetime.datetime.utcnow()}}
         self.db['users'].update_many({'pers_id': str(pers_id)}, info)
+
+    def get_ready_for_autoquit(self):
+        return self.db['users'].find(
+            {"last":
+                 {"$lt": datetime.datetime.utcnow() - datetime.timedelta(minutes=self.INACT_M)}
+             })
