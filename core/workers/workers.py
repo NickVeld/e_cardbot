@@ -42,6 +42,7 @@ class BaseWorker(object, metaclass=WorkersList):
         self.tAPI = teleapi
 
 
+
 class Blacklist(BaseWorker):
     # HELP = "There is a blacklist for rude users!\n\n"
 
@@ -143,6 +144,7 @@ class Translator(BaseWorker):
             txt = tmsg.text.lstrip().lower()
         if txt.startswith('/'):
             txt = txt[1:]
+        txt = txt[:50]
         post = None
         if self.tAPI.DB_IS_ENABLED:
             collection = self.tAPI.db.tr
@@ -216,6 +218,7 @@ class CardDeleter(BaseWorker):
             txt = tmsg.text.lstrip().lower()
         if txt.startswith('/'):
             txt = txt[1:]
+        txt = txt[:50]
         collection = self.tAPI.db[str(tmsg.pers_id)]["known_words"]
         del_c = collection.delete_one({"word": txt}).deleted_count
         print(self.tAPI.send("Карточка успешно удалена" if del_c else "Такой карточки нет.", tmsg.chat_id, tmsg.id))
