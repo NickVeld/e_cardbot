@@ -111,10 +111,24 @@ class DBShell:
             }
         )
 
+    def initialize_user(self, pers_id):
+        if self.db[str(pers_id)]['activity'].count() == 0:
+            self.db['users'].insert_one({'pers_id': str(pers_id), 'last': datetime.datetime.min})
+            for i in range(7):
+                self.db[str(pers_id)]['activity'].insert_one({str(i): 0})
+
+
     def modify_activity(self, pers_id, amount):
         return
-        h = datetime.datetime.hour
+        h = datetime.datetime.utcnow().hour
         for i in range(0, 3):
             p = int(h) - i + (24 if int(h) < i else 0)
             self.db[str(pers_id)]['activity'].update_many(
-                {'weekday': datetime.datetime.utcnow().weekday}, {'$inc':{str(p): amount}})
+                {'weekday': datetime.datetime.utcnow().weekday()}, {'$inc':{str(p): amount}})
+
+    def modify_last_activity(self, pers_id, after_quit):
+        if after_quit:
+            info = {'$set':{'last': datetime.datetime.min}}
+        else:
+            info = {'$set': {'last': datetime.datetime.utcnow()}}
+        self.db['users'].update_many({'pers_id': str(pers_id)}, info)

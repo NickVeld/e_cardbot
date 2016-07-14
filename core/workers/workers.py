@@ -130,6 +130,8 @@ class Translator(BaseWorker):
                                                ((tmsg.pers_id == tmsg.chat_id) and not tmsg.text.startswith("/")))))
 
     def run(self, tmsg):
+        if (tmsg.pers_id == tmsg.chat_id):
+            self.tAPI.db_shell.modify_last_activity(tmsg.pers_id, False)
         is_chain = (tmsg.pers_id, tmsg.chat_id) in self.waitlist
         txt = ""
         if not (is_chain or
@@ -204,6 +206,8 @@ class CardDeleter(BaseWorker):
         return False
 
     def run(self, tmsg):
+        if (tmsg.pers_id == tmsg.chat_id):
+            self.tAPI.db_shell.modify_last_activity(tmsg.pers_id, False)
         is_chain = (tmsg.pers_id, tmsg.chat_id) in self.waitlist
         txt = ""
         if not (is_chain or
@@ -238,6 +242,10 @@ class Info(BaseWorker):
         return tmsg.text.startswith(self.COMMAND) or tmsg.text.startswith("/start")
 
     def run(self, tmsg):
+        if tmsg.text.startswith("/start"):
+            self.tAPI.db_shell.initialize_user(tmsg.pers_id)
+        if (tmsg.pers_id == tmsg.chat_id):
+            self.tAPI.db_shell.modify_last_activity(tmsg.pers_id, False)
         HELP = ""
             # "Включен режим презентации, Вы можете получить слова из банка." if self.tAPI.TEST_WORDS else ""
             # "Storage is " + ("on" if self.tAPI.DB_IS_ENABLED else "off") + "!\n\n"
@@ -263,6 +271,8 @@ class PhraseTranslator(BaseWorker):
         return tmsg.text.startswith(self.COMMAND) or ((tmsg.pers_id, tmsg.chat_id) in self.waitlist)
 
     def run(self, tmsg):
+        if (tmsg.pers_id == tmsg.chat_id):
+            self.tAPI.db_shell.modify_last_activity(tmsg.pers_id, False)
         is_chain = self.waitlist.get((tmsg.pers_id, tmsg.chat_id), False)
         txt = ""
         if not is_chain:
@@ -319,6 +329,8 @@ class SimpleCard(BaseWorker):
         return False
 
     def run(self, tmsg):
+        if (tmsg.pers_id == tmsg.chat_id):
+            self.tAPI.db_shell.modify_last_activity(tmsg.pers_id, False)
         collection = self.tAPI.db[str(tmsg.pers_id)]['known_words']
         try:
             history = self.waitlist[(tmsg.pers_id, tmsg.chat_id)][2]
@@ -396,6 +408,8 @@ class TranslationCard(BaseWorker):
         return False
 
     def run(self, tmsg):
+        if (tmsg.pers_id == tmsg.chat_id):
+            self.tAPI.db_shell.modify_last_activity(tmsg.pers_id, False)
         collection = self.tAPI.db[str(tmsg.pers_id)]['known_words']
         if (tmsg.pers_id, tmsg.chat_id) in self.waitlist:
             self.waitlist[(tmsg.pers_id, tmsg.chat_id)][2] = tmsg.id
@@ -464,6 +478,8 @@ class OptionCard(BaseWorker):
         return False
 
     def run(self, tmsg):
+        if (tmsg.pers_id == tmsg.chat_id):
+            self.tAPI.db_shell.modify_last_activity(tmsg.pers_id, False)
         collection = self.tAPI.db[str(tmsg.pers_id)]['known_words']
         if (tmsg.pers_id, tmsg.chat_id) in self.waitlist:
             self.waitlist[(tmsg.pers_id, tmsg.chat_id)][3] = tmsg.id
@@ -558,6 +574,8 @@ class HangCard(BaseWorker):
         return False
 
     def run(self, tmsg):
+        if (tmsg.pers_id == tmsg.chat_id):
+            self.tAPI.db_shell.modify_last_activity(tmsg.pers_id, False)
         collection = self.tAPI.db[str(tmsg.pers_id)]['known_words']
         if (tmsg.pers_id, tmsg.chat_id) in self.waitlist:
             self.waitlist[(tmsg.pers_id, tmsg.chat_id)][5] = tmsg.id
