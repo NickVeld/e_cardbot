@@ -16,7 +16,7 @@ def get_inline_text_keyboard():
                                  , 'callback_data': getattr(sys.modules[__name__], str).COMMAND}])
     return keyboard
 
-def reminder_run(tapi, worker):
+def reminder_run(tapi):
     for user in tapi.db.collection_names:
         if now_is_belong_to(tapi.db[user]['activity'][datetime.datetime.utcnow().weekday]['reminder_time']):
             tapi.send_inline_keyboard("Как насчет того, чтобы поучить карточки?", int(user), get_inline_text_keyboard())
