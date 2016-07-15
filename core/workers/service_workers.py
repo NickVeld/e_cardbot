@@ -1,6 +1,6 @@
 import sys
 import datetime
-from multiprocessing import Process
+# from multiprocessing import Process
 from core.engine.autoquit import autoquit_run
 from core.engine.reminder import reminder_run
 
@@ -52,10 +52,23 @@ class Autoquit(BaseWorker):
                and datetime.datetime.utcnow() - datetime.timedelta(minutes=self.tAPI.db_shell.INACT_M) >= self.old_time
 
     def run(self):
-        print('inactive')
         self.old_time = datetime.datetime.utcnow()
         # autoquit = Process(target=autoquit_run, args=(self.tAPI,))
         # autoquit.start()
         autoquit_run(self.tAPI)
-        # reminder_run(self.tAPI)
+        return 1
+
+
+class Reminder(BaseWorker):
+    old_time = datetime.datetime.utcnow()
+
+    def is_it_for_me(self):
+        return self.tAPI.DB_IS_ENABLED \
+               and datetime.datetime.utcnow() - datetime.timedelta(minutes=self.tAPI.db_shell.INACT_M) >= self.old_time
+
+    def run(self):
+        self.old_time = datetime.datetime.utcnow()
+        # reminder = Process(target=reminder_run, args=(self.tAPI,))
+        # reminder.start()
+        reminder_run(self.tAPI)
         return 1
