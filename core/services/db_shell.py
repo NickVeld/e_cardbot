@@ -117,16 +117,17 @@ class DBShell:
         if self.db[str(pers_id)]['activity'].count() == 0:
             self.db['users'].insert_one({'pers_id': str(pers_id), 'last': datetime.datetime.min})
             for i in range(7):
-                self.db[str(pers_id)]['activity'].insert_one({str(i): 0})
+                doc = {str(p) : 0 for p in range(24)}
+                doc['weekday'] = str(i)
+                self.db[str(pers_id)]['activity'].insert_one(doc)
 
 
     def modify_activity(self, pers_id, amount):
-        return
         h = datetime.datetime.utcnow().hour
         for i in range(0, 3):
             p = int(h) - i + (24 if int(h) < i else 0)
             self.db[str(pers_id)]['activity'].update_many(
-                {'weekday': datetime.datetime.utcnow().weekday()}, {'$inc':{str(p): amount}})
+                {'weekday': str(datetime.datetime.utcnow().weekday())}, {'$inc':{str(p): amount}})
 
     def modify_last_activity(self, pers_id, after_quit):
         if after_quit:
@@ -134,6 +135,20 @@ class DBShell:
         else:
             info = {'$set': {'last': datetime.datetime.utcnow()}}
         self.db['users'].update_many({'pers_id': str(pers_id)}, info)
+
+    def calculate_reminder_time_for(self, pers_id, weekday):
+        today_stat = self.db[str(pers_id)]['activity'].find_one({'weekday': str(weekday)})
+        index_of_max = '0'
+        for i in range(24):
+            if today_stat[str(i)] >= today_stat[index_of_max]:
+                index_of_max = str(i)
+        self.db[str(pers_id)]['activity'].update_one({'_id': today_stat['_id']}
+                                    , {'$set':{'reminder_time': -1 if today_stat[index_of_max] == 0 else index_of_max}})
+
+    def calculate_reminder_time(self, pers_id):
+        today = datetime.datetime.utcnow().weekday()
+        self.calculate_reminder_time_for(pers_id, 6 if today == 0 else today - 1)
+        self.calculate_reminder_time_for(pers_id, today)
 
     def get_ready_for_autoquit(self):
         return self.db['users'].find(
