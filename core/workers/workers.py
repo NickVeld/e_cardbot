@@ -182,6 +182,8 @@ class Translator(BaseWorker):
     def quit(self, pers_id, chat_id, additional_info = '', msg_id = 0):
         if (pers_id, chat_id) in self.waitlist:
             self.waitlist.remove((pers_id, chat_id))
+            if additional_info != '':
+                self.tAPI.send(additional_info, chat_id)
 
 
 class CardDeleter(BaseWorker):
@@ -233,6 +235,8 @@ class CardDeleter(BaseWorker):
     def quit(self, pers_id, chat_id, additional_info = '', msg_id = 0):
         if (pers_id, chat_id) in self.waitlist:
             self.waitlist.remove((pers_id, chat_id))
+            if additional_info != '':
+                self.tAPI.send(additional_info, chat_id)
 
 
 class Info(BaseWorker):
@@ -304,6 +308,8 @@ class PhraseTranslator(BaseWorker):
     def quit(self, pers_id, chat_id, additional_info='', msg_id=None):
         if (pers_id, chat_id) in self.waitlist:
             self.waitlist.pop((pers_id, chat_id))
+            if additional_info != '':
+                self.tAPI.send(additional_info, chat_id)
 
 
 class SimpleCard(BaseWorker):
@@ -376,8 +382,8 @@ class SimpleCard(BaseWorker):
         return 0
 
     def quit(self, pers_id, chat_id, additional_info = '', msg_id = 0):
-        draft = additional_info + "Я вышел из режима \"simple cards\"."
         if (pers_id, chat_id) in self.waitlist:
+            draft = additional_info + "Я вышел из режима \"simple cards\"."
             if msg_id == 0:
                 msg_id = self.waitlist[(pers_id, chat_id)][3]
             self.waitlist.pop((pers_id, chat_id))
