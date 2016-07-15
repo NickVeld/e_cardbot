@@ -36,7 +36,8 @@ config['included_workers'] = [
     "HangCard"
 ]
 config['included_service_workers'] = [
-    "Autoquit"
+    "Autoquit",
+    "Reminder"
 ]
 config["cards_is_allowed_for_groups"] = True
 config["card_delay_at_minutes"] = 1
