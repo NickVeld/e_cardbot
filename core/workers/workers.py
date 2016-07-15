@@ -40,6 +40,17 @@ class BaseWorker(object, metaclass=WorkersList):
     
     def __init__(self, teleapi):
         self.tAPI = teleapi
+        self.MENU_KEYBOARD = [
+            [{'text': "Перевести слово", 'callback_data': Translator.COMMAND}
+                , {'text': "Удалить карточку", 'callback_data': CardDeleter.COMMAND}],
+            [{'text': "Перевести фразу на русский", 'callback_data': PhraseTranslator.COMMAND+'ru'}
+                , {'text': "Перевести фразу на английский", 'callback_data': PhraseTranslator.COMMAND+'en'}],
+            [{'text': "Карточки знаю/не знаю", 'callback_data': SimpleCard.COMMAND}
+                , {'text': "Карточки на знание перевода", 'callback_data': Translator.COMMAND}],
+            [{'text': "Карточки с 4 опциями ответа", 'callback_data': OptionCard.COMMAND}
+                , {'text': "Виселица", 'callback_data': HangCard.COMMAND}],
+            [{'text': "Помощь/дополнительная информация", 'callback_data': Info.COMMAND}]
+        ]
 
 
 
