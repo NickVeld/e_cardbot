@@ -137,6 +137,7 @@ class DBShell:
 
     def get_ready_for_autoquit(self):
         return self.db['users'].find(
-            {"last":
-                 {"$lt": datetime.datetime.utcnow() - datetime.timedelta(minutes=self.INACT_M)}
+            {'last':
+                 {'$ne': datetime.datetime.min
+                     , '$lte': datetime.datetime.utcnow() - datetime.timedelta(minutes=(self.INACT_M-1))}
              })
