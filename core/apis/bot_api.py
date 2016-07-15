@@ -3,6 +3,7 @@
 import requests
 import json
 from core.services.db_shell import DBShell
+from core.workers.service_workers import WorkersList as ServiceWorkersList
 
 __author__ = 'NickVeld'
 
@@ -18,6 +19,8 @@ class API:
         self.BOT_NICK = ""
         self.DB_IS_ENABLED = False
         self.NO_CARDS_GROUPS = True
+
+        self.workers_list = None
 
     # def __init__(self, data):
     #     self.telegram = Tg_api(data["api_key"])
@@ -40,11 +43,19 @@ class API:
         self.translator.get_from_config(cfg['APIs'])
         self.db_shell.get_from_config(cfg)
 
+        self.service_workers_list = ServiceWorkersList.get_workers(ServiceWorkersList
+                                                                   , cfg["included_service_workers"], self)
+
     def get(self, toffset=0):
         return self.telegram.get(toffset)
 
     def get_msg(self):
         while True:
+            for worker in self.service_workers_list:
+                if worker.is_it_for_me():
+                    cmd = worker.run()
+                    if cmd != 1:
+                        break
             new_msgs = self.get(self.offset)
             if new_msgs is None:
                 continue

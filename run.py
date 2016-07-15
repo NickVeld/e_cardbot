@@ -25,7 +25,9 @@ except Exception as ex:
     offset = 163111506
 
 tapi.offset = offset
-bs = BotCycle(tapi, WorkersList.get_workers(WorkersList, cfg["included_workers"], tapi))
+workers_list = WorkersList.get_workers(WorkersList, cfg["included_workers"], tapi)
+tapi.workers_list = workers_list
+bs = BotCycle(tapi, workers_list)
 bs.run()
 
 try:
