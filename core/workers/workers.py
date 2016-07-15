@@ -170,7 +170,7 @@ class Translator(BaseWorker):
             else:
                 lang = "ru"
             if res == "":
-                print(self.tAPI.send("Нет перевода!", tmsg.chat_id, tmsg.id))
+                print(self.tAPI.send_inline_keyboard("Нет перевода!", tmsg.chat_id, self.MENU_KEYBOARD, tmsg.id))
             elif lang == "":
                 lang = "en"
             if lang != "":
@@ -178,12 +178,12 @@ class Translator(BaseWorker):
                 if with_mistake:
                     res = res[3:]
 
-                print(self.tAPI.send(("Возможно, Вы имели ввиду: "
-                                      if with_mistake else "") + res, tmsg.chat_id, tmsg.id))
+                print(self.tAPI.send_inline_keyboard(("Возможно, Вы имели ввиду: "
+                                      if with_mistake else "") + res, tmsg.chat_id, self.MENU_KEYBOARD, tmsg.id))
                 if self.tAPI.DB_IS_ENABLED:
                     self.tAPI.insert_doc_for_card(tmsg, collection, txt, lang, res)
         else:
-            print(self.tAPI.send("l " + post["trl"], tmsg.chat_id, tmsg.id))
+            print(self.tAPI.send_inline_keyboard("l " + post["trl"], tmsg.chat_id, self.MENU_KEYBOARD, tmsg.id))
 
         self.tAPI.db_shell.modify_activity(tmsg.pers_id, 1)
 
@@ -194,7 +194,7 @@ class Translator(BaseWorker):
         if (pers_id, chat_id) in self.waitlist:
             self.waitlist.remove((pers_id, chat_id))
             if additional_info != '':
-                self.tAPI.send(additional_info, chat_id)
+                self.tAPI.send_inline_keyboard(additional_info, chat_id, self.MENU_KEYBOARD, msg_id)
 
 
 class CardDeleter(BaseWorker):
@@ -238,7 +238,8 @@ class CardDeleter(BaseWorker):
         txt = txt[:50]
         collection = self.tAPI.db[str(tmsg.pers_id)]["known_words"]
         del_c = collection.delete_one({"word": txt}).deleted_count
-        print(self.tAPI.send("Карточка успешно удалена" if del_c else "Такой карточки нет.", tmsg.chat_id, tmsg.id))
+        print(self.tAPI.send_inline_keyboard("Карточка успешно удалена" if del_c else "Такой карточки нет."
+                                             , tmsg.chat_id, self.MENU_KEYBOARD, tmsg.id))
 
         self.quit(tmsg.pers_id, tmsg.chat_id)
         return 0
@@ -247,7 +248,7 @@ class CardDeleter(BaseWorker):
         if (pers_id, chat_id) in self.waitlist:
             self.waitlist.remove((pers_id, chat_id))
             if additional_info != '':
-                self.tAPI.send(additional_info, chat_id)
+                self.tAPI.send_inline_keyboard(additional_info, chat_id, self.MENU_KEYBOARD, msg_id)
 
 
 class Info(BaseWorker):
@@ -267,7 +268,7 @@ class Info(BaseWorker):
         for worker in WorkersList.workers:
             HELP += worker[1].HELP
         HELP = HELP[:-2]
-        self.tAPI.send(HELP, tmsg.chat_id)
+        self.tAPI.send_inline_keyboard(HELP, tmsg.chat_id, self.MENU_KEYBOARD)
         return 0
 
     def quit(self, pers_id, chat_id, additional_info = '', msg_id = 0):
@@ -310,9 +311,9 @@ class PhraseTranslator(BaseWorker):
         else:
             res = self.tAPI.translateph(txt, tmsg.text[3:5], "ru")
         if res == "":
-            print(self.tAPI.send("Нет перевода!", tmsg.chat_id, tmsg.id))
+            print(self.tAPI.send("Нет перевода!", tmsg.chat_id, self.MENU_KEYBOARD, tmsg.id))
         else:
-            print(self.tAPI.send(res, tmsg.chat_id, tmsg.id))
+            print(self.tAPI.send(res, tmsg.chat_id, self.MENU_KEYBOARD, tmsg.id))
         self.quit(tmsg.pers_id, tmsg.chat_id)
         return 0
 
@@ -320,7 +321,7 @@ class PhraseTranslator(BaseWorker):
         if (pers_id, chat_id) in self.waitlist:
             self.waitlist.pop((pers_id, chat_id))
             if additional_info != '':
-                self.tAPI.send(additional_info, chat_id)
+                self.tAPI.send_inline_keyboard(additional_info, chat_id, self.MENU_KEYBOARD)
 
 
 class SimpleCard(BaseWorker):
@@ -398,7 +399,7 @@ class SimpleCard(BaseWorker):
             if msg_id == 0:
                 msg_id = self.waitlist[(pers_id, chat_id)][3]
             self.waitlist.pop((pers_id, chat_id))
-            self.tAPI.edit(draft, chat_id, None, msg_id)
+            self.tAPI.edit(draft, chat_id, self.MENU_KEYBOARD, msg_id)
 
 
 class TranslationCard(BaseWorker):
@@ -466,7 +467,8 @@ class TranslationCard(BaseWorker):
             if msg_id == 0:
                 msg_id = self.waitlist[(pers_id, chat_id)][2]
             self.waitlist.pop((pers_id, chat_id))
-            self.tAPI.send(additional_info + "Я вышел из режима \"translation cards\".", chat_id, msg_id)
+            self.tAPI.send_inline_keyboard(additional_info + "Я вышел из режима \"translation cards\"."
+                                           , chat_id, self.MENU_KEYBOARD, msg_id)
 
 
 class OptionCard(BaseWorker):
@@ -565,7 +567,7 @@ class OptionCard(BaseWorker):
             if msg_id == 0:
                 msg_id = self.waitlist[(pers_id, chat_id)][5]
             self.waitlist.pop((pers_id, chat_id))
-            self.tAPI.edit(additional_info + "Я вышел из режима \"4option cards\".", chat_id, None, msg_id)
+            self.tAPI.edit(additional_info + "Я вышел из режима \"4option cards\".", chat_id, self.MENU_KEYBOARD, msg_id)
 
 
 class HangCard(BaseWorker):
@@ -665,7 +667,7 @@ class HangCard(BaseWorker):
             if msg_id == 0:
                 msg_id = self.waitlist[(pers_id, chat_id)][5]
             self.waitlist.pop((pers_id, chat_id))
-            self.tAPI.edit(additional_info + "Я вышел из режима \"hang cards\".", chat_id, None, msg_id)
+            self.tAPI.edit(additional_info + "Я вышел из режима \"hang cards\".", chat_id, self.MENU_KEYBOARD, msg_id)
 
     def state_to_string(self, state):
         return state[1] + "\nВаше количество жизней: " + str(state[2]) + "."
