@@ -35,6 +35,9 @@ config['included_workers'] = [
     "OptionCard",
     "HangCard"
 ]
+config['included_service_workers'] = [
+    "Autoquit"
+]
 config["cards_is_allowed_for_groups"] = True
 config["card_delay_at_minutes"] = 1
 config["user_inactivity_time_at_minutes"] = 5
