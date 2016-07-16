@@ -46,7 +46,7 @@ class BaseWorker(object, metaclass=WorkersList):
             [{'text': "Перевести фразу на русский", 'callback_data': PhraseTranslator.COMMAND+'ru'}
                 , {'text': "Перевести фразу на английский", 'callback_data': PhraseTranslator.COMMAND+'en'}],
             [{'text': "Карточки знаю/не знаю", 'callback_data': SimpleCard.COMMAND}
-                , {'text': "Карточки на знание перевода", 'callback_data': Translator.COMMAND}],
+                , {'text': "Карточки на знание перевода", 'callback_data': TranslationCard.COMMAND}],
             [{'text': "Карточки с 4 опциями ответа", 'callback_data': OptionCard.COMMAND}
                 , {'text': "Виселица", 'callback_data': HangCard.COMMAND}],
             [{'text': "Помощь/дополнительная информация", 'callback_data': Info.COMMAND}]
@@ -211,7 +211,7 @@ class CardDeleter(BaseWorker):
                 print(self.tAPI.send("Этот режим сейчас недоступен!", tmsg.chat_id, tmsg.id))
             elif self.tAPI.NO_CARDS_GROUPS and (tmsg.chat_id != tmsg.pers_id):
                 print(self.tAPI.send("Использование режима в групповом чате отключено!", tmsg.chat_id, tmsg.id))
-            elif self.tAPI.db[str(tmsg.pers_id)]['known_words'].count() == 0 and not self.tAPI.TEST_WORDS:
+            elif self.tAPI.db[str(tmsg.pers_id)]['known_words'].count() == 0 and not self.tAPI.db_shell.TEST_WORDS:
                 print(self.tAPI.send("Вы не переводили слов, поэтому не могу запустить этот режим.", tmsg.chat_id,
                                      tmsg.id))
             else:
@@ -263,7 +263,7 @@ class Info(BaseWorker):
         if (tmsg.pers_id == tmsg.chat_id):
             self.tAPI.db_shell.modify_last_activity(tmsg.pers_id, False)
         HELP = ""
-            # "Включен режим презентации, Вы можете получить слова из банка." if self.tAPI.TEST_WORDS else ""
+            # "Включен режим презентации, Вы можете получить слова из банка." if self.tAPI.db_shell.TEST_WORDS else ""
             # "Storage is " + ("on" if self.tAPI.DB_IS_ENABLED else "off") + "!\n\n"
         for worker in WorkersList.workers:
             HELP += worker[1].HELP
@@ -339,7 +339,7 @@ class SimpleCard(BaseWorker):
                 print(self.tAPI.send("Этот режим сейчас недоступен!", tmsg.chat_id, tmsg.id))
             elif self.tAPI.NO_CARDS_GROUPS and (tmsg.chat_id != tmsg.pers_id):
                 print(self.tAPI.send("Использование режима в групповом чате отключено!", tmsg.chat_id, tmsg.id))
-            elif self.tAPI.db[str(tmsg.pers_id)]['known_words'].count() == 0 and not self.tAPI.TEST_WORDS:
+            elif self.tAPI.db[str(tmsg.pers_id)]['known_words'].count() == 0 and not self.tAPI.db_shell.TEST_WORDS:
                 print(self.tAPI.send("Вы не переводили слов, поэтому не могу запустить этот режим.", tmsg.chat_id, tmsg.id))
             else:
                 self.tAPI.db_shell.modify_activity(tmsg.pers_id, 1)
@@ -392,8 +392,6 @@ class SimpleCard(BaseWorker):
                 self.waitlist[(tmsg.pers_id, tmsg.chat_id)].append(
                     self.tAPI.send_inline_keyboard_with_id("Помните ли вы слово \"" + post['word'] + "\"?",
                                  tmsg.chat_id, self.tAPI.get_inline_text_keyboard("Yes\nNo\nStop"), tmsg.id))
-                print(tmsg.id)
-                print(self.waitlist[(tmsg.pers_id, tmsg.chat_id)][3])
         return 0
 
     def quit(self, pers_id, chat_id, additional_info = '', msg_id = 0):
@@ -420,7 +418,7 @@ class TranslationCard(BaseWorker):
                 print(self.tAPI.send("Этот режим сейчас недоступен!", tmsg.chat_id, tmsg.id))
             elif self.tAPI.NO_CARDS_GROUPS and tmsg.chat_id != tmsg.pers_id:
                 print(self.tAPI.send("Использование режима в групповом чате отключено!", tmsg.chat_id, tmsg.id))
-            elif self.tAPI.db[str(tmsg.pers_id)]['known_words'].count() == 0 and not self.tAPI.TEST_WORDS:
+            elif self.tAPI.db[str(tmsg.pers_id)]['known_words'].count() == 0 and not self.tAPI.db_shell.TEST_WORDS:
                 print(self.tAPI.send("Вы не переводили слов, поэтому не могу запустить этот режим.", tmsg.chat_id, tmsg.id))
             else:
                 self.tAPI.send("/Stop - остановить режим. \n /Next - следующее слово.", tmsg.chat_id, tmsg.id)
@@ -458,11 +456,11 @@ class TranslationCard(BaseWorker):
             self.quit(tmsg.pers_id, tmsg.chat_id, "Мне не о чем вас спросить сейчас, попробуйте включить этот режим через несколько("
                            + str(self.tAPI.COOLDOWN_M) + ") минут.\n", tmsg.id)
         else:
-            print(self.tAPI.send("Напишите /* и без пробела слово, которому соответствует этот перевод:\n\"" +
+            self.waitlist[(tmsg.pers_id, tmsg.chat_id)] = res[1]
+            self.waitlist[(tmsg.pers_id, tmsg.chat_id)].append(
+                self.tAPI.send_with_id("Напишите /* и без пробела слово, которому соответствует этот перевод:\n\"" +
                                  self.tAPI.db.tr.find_one({"word": post['word']})["trl"] + "\"",
                                  tmsg.chat_id, tmsg.id))
-            self.waitlist[(tmsg.pers_id, tmsg.chat_id)] = res[1]
-            self.waitlist[(tmsg.pers_id, tmsg.chat_id)].append(tmsg.id)
         return 0
 
     def quit(self, pers_id, chat_id, additional_info = '', msg_id = 0):
@@ -489,7 +487,7 @@ class OptionCard(BaseWorker):
                 print(self.tAPI.send("Этот режим сейчас недоступен!", tmsg.chat_id, tmsg.id))
             elif self.tAPI.NO_CARDS_GROUPS and tmsg.chat_id != tmsg.pers_id:
                 print(self.tAPI.send("Использование режима в групповом чате отключено!", tmsg.chat_id, tmsg.id))
-            elif not self.tAPI.TEST_WORDS\
+            elif not self.tAPI.db_shell.TEST_WORDS\
                     and self.tAPI.db[str(tmsg.pers_id)]['known_words'].find({'lang': 'ru'}).count() < 4 \
                     and self.tAPI.db[str(tmsg.pers_id)]['known_words'].find({'lang': 'en'}).count() < 4:
                 print(self.tAPI.send("Вы не перевели еще 4 слов на одном из языков"
@@ -557,12 +555,13 @@ class OptionCard(BaseWorker):
                                     , [{'text': post['word'], 'callback_data': "/*" + post['word']}])
             draft = "Выберите из предложенных слов слово, которому соответствует этот перевод:\n\""\
                     + self.tAPI.db.tr.find_one({"word": post['word']})["trl"] + "\""
+            self.waitlist[(tmsg.pers_id, tmsg.chat_id)].append(current_keyboard)
             if tmsg.is_inline:
+                self.waitlist[(tmsg.pers_id, tmsg.chat_id)].append(tmsg.id)
                 print(self.tAPI.edit(draft, tmsg.chat_id, current_keyboard, tmsg.id))
             else:
-                print(self.tAPI.send_inline_keyboard(draft, tmsg.chat_id, current_keyboard, tmsg.id))
-            self.waitlist[(tmsg.pers_id, tmsg.chat_id)].append(current_keyboard)
-            self.waitlist[(tmsg.pers_id, tmsg.chat_id)].append(tmsg.id)
+                self.waitlist[(tmsg.pers_id, tmsg.chat_id)].append(
+                    self.tAPI.send_inline_keyboard_with_id(draft, tmsg.chat_id, current_keyboard, tmsg.id))
         return 0
 
     def quit(self, pers_id, chat_id, additional_info = '', msg_id = 0):
@@ -587,7 +586,7 @@ class HangCard(BaseWorker):
                 print(self.tAPI.send("Этот режим сейчас недоступен!", tmsg.chat_id, tmsg.id))
             elif self.tAPI.NO_CARDS_GROUPS and tmsg.chat_id != tmsg.pers_id:
                 print(self.tAPI.send("Использование режима в групповом чате отключено!", tmsg.chat_id, tmsg.id))
-            elif self.tAPI.db[str(tmsg.pers_id)]['known_words'].count() == 0 and not self.tAPI.TEST_WORDS:
+            elif self.tAPI.db[str(tmsg.pers_id)]['known_words'].count() == 0 and not self.tAPI.db_shell.TEST_WORDS:
                 print(self.tAPI.send("Вы не переводили слов, поэтому не могу запустить этот режим.", tmsg.chat_id, tmsg.id))
             else:
                 self.tAPI.send("Stop - остановить режим. \n Next - следующее слово.", tmsg.chat_id, tmsg.id)
@@ -659,9 +658,9 @@ class HangCard(BaseWorker):
         if post == None:
             self.quit(tmsg.pers_id, tmsg.chat_id, "Мне не о чем вас спросить.", tmsg.id)
         else:
-            state = [post['word'], "- " * len(post['word']), 6, self.default_keyboard(post['lang']), post['word'], tmsg.id]
-            print(self.tAPI.send_inline_keyboard(self.tAPI.db.tr.find_one({"word": post['word']})["trl"] + '\n'
-            + self.state_to_string(state), tmsg.chat_id, state[3]))
+            state = [post['word'], "- " * len(post['word']), 6, self.default_keyboard(post['lang']), post['word']]
+            state.append(self.tAPI.send_inline_keyboard_with_id(self.tAPI.db.tr.find_one({"word": post['word']})["trl"]
+                                            + '\n' + self.state_to_string(state), tmsg.chat_id, state[3]))
             self.waitlist[(tmsg.pers_id, tmsg.chat_id)] = state
         return 0
 
