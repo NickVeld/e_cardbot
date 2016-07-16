@@ -119,6 +119,7 @@ class DBShell:
             for i in range(7):
                 doc = {str(p) : 0 for p in range(24)}
                 doc['weekday'] = str(i)
+                doc['reminder_time'] = -1
                 self.db[str(pers_id)]['activity'].insert_one(doc)
 
 
