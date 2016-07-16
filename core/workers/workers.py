@@ -384,13 +384,16 @@ class SimpleCard(BaseWorker):
         else:
             self.waitlist[(tmsg.pers_id, tmsg.chat_id)] = res[1]
             self.waitlist[(tmsg.pers_id, tmsg.chat_id)].append(history)
-            self.waitlist[(tmsg.pers_id, tmsg.chat_id)].append(tmsg.id)
             if tmsg.is_inline:
                 print(self.tAPI.edit(history + "Помните ли вы слово \"" + post['word'] + "\"?",
                                  tmsg.chat_id, self.tAPI.get_inline_text_keyboard("Yes\nNo\nStop"), tmsg.id))
+                self.waitlist[(tmsg.pers_id, tmsg.chat_id)].append(tmsg.id)
             else:
-                print(self.tAPI.send_inline_keyboard("Помните ли вы слово \"" + post['word'] + "\"?",
+                self.waitlist[(tmsg.pers_id, tmsg.chat_id)].append(
+                    self.tAPI.send_inline_keyboard_with_id("Помните ли вы слово \"" + post['word'] + "\"?",
                                  tmsg.chat_id, self.tAPI.get_inline_text_keyboard("Yes\nNo\nStop"), tmsg.id))
+                print(tmsg.id)
+                print(self.waitlist[(tmsg.pers_id, tmsg.chat_id)][3])
         return 0
 
     def quit(self, pers_id, chat_id, additional_info = '', msg_id = 0):

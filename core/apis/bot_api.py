@@ -68,6 +68,10 @@ class API:
         return self.telegram.send(message, chat_id, reply_to_message_id)
 
     def send_inline_keyboard(self, message, chat_id, inline_keyboard, reply_to_message_id=0):
+        self.telegram.send_inline_keyboard(message, chat_id, inline_keyboard, reply_to_message_id)
+        return message
+
+    def send_inline_keyboard_with_id(self, message, chat_id, inline_keyboard, reply_to_message_id=0):
         return self.telegram.send_inline_keyboard(message, chat_id, inline_keyboard, reply_to_message_id)
 
     def edit(self, message, chat_id, inline_keyboard, message_id):
@@ -240,12 +244,15 @@ class Tg_api:
                 params=params,
                 timeout=30
             )
+            sended = json.loads(req.text)
+            if sended['ok']:
+                return sended['result']['message_id']
         except requests.exceptions.Timeout:
             print("Timeout in send_inline_keyboard(...)!")
         except Exception as ex:
             print("Error in send_inline_keyboard(...)!")
             print(type(ex), ex.__str__())
-        return message
+        return 0
 
     def edit(self, message, chat_id, inline_keyboard, message_id):
         method = 'editMessageText'
