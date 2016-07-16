@@ -65,6 +65,10 @@ class API:
                 yield msg
 
     def send(self, message, chat_id, reply_to_message_id=0, keyboard=None):
+        self.telegram.send(message, chat_id, reply_to_message_id)
+        return message
+
+    def send_with_id(self, message, chat_id, reply_to_message_id=0, keyboard=None):
         return self.telegram.send(message, chat_id, reply_to_message_id)
 
     def send_inline_keyboard(self, message, chat_id, inline_keyboard, reply_to_message_id=0):
@@ -172,12 +176,15 @@ class Tg_api:
                 params=params,
                 timeout=30
             )
+            sended = json.loads(req.text)
+            if sended['ok']:
+                return sended['result']['message_id']
         except requests.exceptions.Timeout:
             print("Timeout in send()!")
         except Exception as ex:
             print("Error in send()!")
             print(type(ex), ex.__str__())
-        return message
+        return 0
 
     def get_reply_keyboard(self, source):
         return [["/{}".format(c) for c in s_in.split('\t')] for s_in in source.split('\n')]
@@ -209,12 +216,15 @@ class Tg_api:
                 params=params,
                 timeout=30
             )
+            sended = json.loads(req.text)
+            if sended['ok']:
+                return sended['result']['message_id']
         except requests.exceptions.Timeout:
             print("Timeout in send_reply_keyboard(...)!")
         except Exception as ex:
             print("Error in send_reply_keyboard(...)!")
             print(type(ex), ex.__str__())
-        return message
+        return 0
 
     def get_inline_text_keyboard(self, source):
         return list([[{'text': c,
