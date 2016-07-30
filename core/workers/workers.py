@@ -689,11 +689,11 @@ class HangCard(BaseWorker):
 
     def default_keyboard(self, lang):
         if lang == "en":
-            return self.tAPI.get_inline_text_keyboard(
-                """a\tb\tc\td\te\tf\tg\th\ti\nj\tk\tl\tm\tn\to\tp\tq\tr\ns\tt\tu\tv\tw\tx\ty\tz\nNext\tStop""")
+            return self.tAPI.telegram.get_inline_text_keyboard(
+                """a\tb\tc\td\te\tf\tg\th\ni\tj\tk\tl\tm\tn\to\tp\nq\tr\ts\tt\tu\tv\tw\tx\ny\tz\tNext\tStop""")
         elif lang == "ru":
-            return self.tAPI.get_inline_text_keyboard(
-                """а\tб\tв\tг\tд\tе\tж\tз\tи\tй\nк\tл\tм\tн\tо\tп\tр\tс\tт\tу\tф\nх\tц\tч\tш\tщ\tъ\tы\tь\tю\tя\nNext\tStop""")
+            return self.tAPI.telegram.get_inline_text_keyboard(
+                """а\tб\tв\tг\tд\tе\tё\tж\nз\tи\tй\tк\tл\tм\tн\tо\nп\tр\tс\tт\tу\tф\tх\tц\nч\tш\tщ\tъ\tы\tь\tэ\tю\nя\tNext\tStop""")
             # return [["/а", "/б", "/в", "/г", "/д", "/е", "/ё", "/ж", "/з", "/и", "/й"],
             #         ["/к", "/л", "/м", "/н", "/о", "/п", "/р", "/с", "/т", "/у", "/ф"],
             #         ["/х", "/ц", "/ч", "/ш", "/щ", "/ъ", "/ы", "/ь", "/э", "/ю", "/я"], ["/Next", "/Stop"]]
